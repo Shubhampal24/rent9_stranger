@@ -10,29 +10,30 @@ import Input from "../input/InputField";
 import Select from "../Select";
 import { ChevronDownIcon } from "../../../icons";
 import OwnerModal from "../../owners/OwnerModal";
-import ConsumerSelect from "../../consumers/ConsumerSelect";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Centre { _id: string; name: string; shortCode?: string; }
 interface BankAccount { _id: string; accountHolder: string; accountNo: string; bankName: string; ifsc: string; branchName?: string; }
-interface Owner { _id: string; ownerName: string; mobileNo: string; bankAccounts: BankAccount[]; }
+interface Owner { _id: string; ownerName: string; mobileNo: string; ownerDetails?: string; bankAccounts: BankAccount[]; }
 
-interface ElectricityConsumer {
+interface BankPayout {
   _id?: string;
-  consumerNo: string;
-  consumerName: string;
-  electricityProvider: string;
+  accountHolder: string;
+  accountNo: string;
+  bankName: string;
+  ifsc: string;
+  branchName: string;
+  details: string;
 }
 
 interface OwnerAssignment {
-  _id?: string; // The assignment ID from backend
+  _id?: string;
   ownerId: string;
-  ownerName: string;          // display only
-  ownershipPercentage: number | "";
+  ownerName: string;
+  ownerMobile?: string;
+  ownerDetails?: string;
   ownerMonthlyRent: number | "";
-  bankMode: "existing" | "new";
-  selectedBankAccountId: string;
-  newBank: { accountHolder: string; accountNo: string; bankName: string; ifsc: string; branchName: string; details: string; };
+  bankPayouts: BankPayout[];
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -72,12 +73,12 @@ const INITIAL_FORM = {
   authorisedPersonCommission: "", paymentDay: "", status: "active",
 };
 
-// ─── Section header helper ────────────────────────────────────────────────────
+// ─── Section Header ───────────────────────────────────────────────────────────
 function SectionHeader({ icon: Icon, title, subtitle, action }: { icon: any; title: string; subtitle?: string; action?: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between pb-3 mb-4 border-b border-gray-100 dark:border-white/[0.05]">
       <div className="flex items-center gap-2.5">
-        <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
+        <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg shadow-sm">
           <Icon size={16} className="text-indigo-600 dark:text-indigo-400" />
         </div>
         <div>
@@ -90,7 +91,7 @@ function SectionHeader({ icon: Icon, title, subtitle, action }: { icon: any; tit
   );
 }
 
-// ─── Field wrapper ────────────────────────────────────────────────────────────
+// ─── Field Wrapper ────────────────────────────────────────────────────────────
 function Field({ label, children, span2 = false }: { label: string; children: React.ReactNode; span2?: boolean }) {
   return (
     <div className={span2 ? "col-span-2" : ""}>
@@ -100,97 +101,109 @@ function Field({ label, children, span2 = false }: { label: string; children: Re
   );
 }
 
-// ─── Main Component: Site Edit Form ───────────────────────────────────────────
 export default function UpdateSitesForm() {
   const params = useParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Centres & Owners for pickers
+  // Pickers state
   const [centres, setCentres] = useState<Centre[]>([]);
   const [allOwners, setAllOwners] = useState<Owner[]>([]);
   const [isNewOwnerModalOpen, setIsNewOwnerModalOpen] = useState(false);
-  const [ownerPickerOpen, setOwnerPickerOpen] = useState(false);
-  const [ownerSearch, setOwnerSearch] = useState("");
-
-  // Form State
-  const [form, setForm] = useState(INITIAL_FORM as any);
-
-  const [assignments, setAssignments] = useState<OwnerAssignment[]>([]);
   const [expandedAssign, setExpandedAssign] = useState<boolean[]>([]);
-  const [removedOwnerIds, setRemovedOwnerIds] = useState<string[]>([]);
 
-  const [electricityConsumerIds, setElectricityConsumerIds] = useState<string[]>([]);
-  const [initialConsumerIds, setInitialConsumerIds] = useState<string[]>([]);
-  const [allConsumers, setAllConsumers] = useState<any[]>([]);
+  // Main state
+  const [form, setForm] = useState(INITIAL_FORM as any);
+  const [assignments, setAssignments] = useState<OwnerAssignment[]>([]);
+  const [removedAssignIds, setRemovedAssignIds] = useState<string[]>([]); // To track assignment links to delete
+  const [fullElectricityConsumers, setFullElectricityConsumers] = useState<any[]>([]);
+  const [removedConsumerIds, setRemovedConsumerIds] = useState<string[]>([]); // To track consumer assignments to delete
 
-  // ── Fetch Initial Data ──────────────────────────────────────────────────────
+  // ── Fetch Initial State ─────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const siteId = params.id;
-      // 1. Fetch Centres
       const token = localStorage.getItem("token");
-      const payload = token ? parseJwt(token) : null;
-      const userId = payload?._id || payload?.id;
-      if (userId) {
-        const uRes = await fetch(`${API}/api/users/${userId}`, { headers: authHeaders() });
-        const uJson = await uRes.json();
-        const user = uJson.data || uJson;
-        setCentres((user.centreIds || []).map((c: any) => typeof c === "object" ? { _id: c._id, name: c.name, shortCode: c.shortCode } : { _id: c, name: c }));
-      }
 
-      // 2. Fetch Owners and Consumers
-      await Promise.all([fetchOwners(), fetchConsumers()]);
+      // 1. Fetch Master Repos & Site Details
+      const [uRes, oRes, sRes] = await Promise.all([
+         fetch(`${API}/api/users/${parseJwt(token!)?._id || parseJwt(token!)?.id}`, { headers: authHeaders() }),
+         fetch(`${API}/api/rent/owners/?page=1&limit=500`, { headers: authHeaders() }),
+         fetch(`${API}/api/rent/sites/${siteId}`, { headers: authHeaders() })
+      ]);
 
-      // 3. Fetch Site Details
-      const sRes = await fetch(`${API}/api/rent/sites/${siteId}`, { headers: authHeaders() });
+      const uJson = await uRes.json();
+      const oJson = await oRes.json();
       const sJson = await sRes.json();
-      const siteData = sJson.data || sJson;
 
-      // Map site core fields
+      const user = uJson.data || uJson;
+      setCentres((user.centreIds || []).map((c: any) => typeof c === "object" ? { _id: c._id, name: c.name } : { _id: c, name: c }));
+      setAllOwners(oJson.data || []);
+
+      const siteData = sJson.data || sJson;
+      console.log("🚀 [Update Site] Fetched Site Response:", siteData);
+
+      // Map Core Fields
       const newForm: any = { ...INITIAL_FORM };
       Object.keys(INITIAL_FORM).forEach(k => {
         if (siteData[k] !== undefined) {
            if (k.toLowerCase().includes("date") && siteData[k]) {
              newForm[k] = siteData[k].split("T")[0];
            } else {
-             newForm[k] = siteData[k] === null ? "" : siteData[k];
+             newForm[k] = siteData[k] ?? "";
            }
         }
       });
       if (siteData.centreId?._id) newForm.centreId = siteData.centreId._id;
       setForm(newForm);
 
-      // Map Owners
+      // Map Owners - Grouped by ownerId to support multiple bank payouts per owner
       if (siteData.owners) {
-        const mappedOwners: OwnerAssignment[] = siteData.owners.map((o: any) => ({
-          _id: o._id,
-          ownerId: o.ownerId?._id || o.ownerId,
-          ownerName: o.ownerId?.ownerName || "Unknown",
-          ownershipPercentage: o.ownershipPercentage,
-          ownerMonthlyRent: o.ownerMonthlyRent,
-          bankMode: "existing",
-          selectedBankAccountId: "", // We'll just show existing bank info if needed, but for edit we might need to pick again
-          newBank: {
-            accountHolder: o.accountHolder || "",
-            accountNo: o.accountNo || "",
-            bankName: o.bankName || "",
-            ifsc: o.ifsc || "",
-            branchName: o.branchName || "",
-            details: ""
+        const groupedMap = new Map<string, OwnerAssignment>();
+        
+        siteData.owners.forEach((o: any) => {
+          const oid = o.ownerId?._id || o.ownerId;
+          const profileBank = o.ownerId?.bankAccounts?.[0] || {};
+          
+          const payout: BankPayout = {
+            _id: o._id, // This is the linking ID (SiteOwner record ID)
+            accountHolder: o.bankAccount?.accountHolder || o.accountHolder || profileBank.accountHolder || "",
+            accountNo: o.bankAccount?.accountNo || o.accountNo || profileBank.accountNo || "",
+            bankName: o.bankAccount?.bankName || o.bankName || profileBank.bankName || "",
+            ifsc: o.bankAccount?.ifsc || o.ifsc || profileBank.ifsc || "",
+            branchName: o.bankAccount?.branchName || o.branchName || profileBank.branchName || "",
+            details: o.bankAccount?.details || o.details || profileBank.details || "",
+          };
+
+          if (groupedMap.has(oid)) {
+            groupedMap.get(oid)!.bankPayouts.push(payout);
+          } else {
+            groupedMap.set(oid, {
+              ownerId: oid,
+              ownerName: o.ownerId?.ownerName || "Unknown",
+              ownerMobile: o.ownerId?.mobileNo || "",
+              ownerDetails: o.ownerId?.ownerDetails || "",
+              bankPayouts: [payout],
+              ownerMonthlyRent: o.ownerMonthlyRent || "",
+            });
           }
-        }));
-        setAssignments(mappedOwners);
-        setExpandedAssign(mappedOwners.map(() => false));
+        });
+        
+        const mapped = Array.from(groupedMap.values());
+        setAssignments(mapped);
+        setExpandedAssign(mapped.map(() => false));
       }
 
       // Map Consumers
       if (siteData.electricityConsumers) {
-        const ids = siteData.electricityConsumers.map((c: any) => c._id);
-        setElectricityConsumerIds(ids);
-        setInitialConsumerIds(ids);
+        setFullElectricityConsumers(siteData.electricityConsumers.map((c: any) => ({
+          _id: c._id,
+          consumerNo: c.consumerNo,
+          consumerName: c.consumerName,
+          electricityProvider: c.electricityProvider
+        })));
       }
 
     } catch (err) {
@@ -200,400 +213,521 @@ export default function UpdateSitesForm() {
     }
   }, [params.id]);
 
-  const fetchOwners = async () => {
-    try {
-      const oRes = await fetch(`${API}/api/rent/owners/?page=1&limit=250`, { headers: authHeaders() });
-      const oJson = await oRes.json();
-      setAllOwners(oJson.data ?? []);
-    } catch (e) {
-      console.error("Failed to fetch owners", e);
-    }
-  };
-
-  const fetchConsumers = async () => {
-    try {
-      const cRes = await fetch(`${API}/api/rent/siteConsumer/all?page=1&limit=250`, { headers: authHeaders() });
-      const cJson = await cRes.json();
-      setAllConsumers(cJson.data || cJson || []);
-    } catch (e) {
-      console.error("Failed to fetch consumers", e);
-    }
-  };
-
   useEffect(() => { if (params.id) fetchData(); }, [params.id, fetchData]);
 
-  // ── Form Handlers ───────────────────────────────────────────────────────────
+  // ── Handlers ───────────────────────────────────────────────────────────────
   const setField = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((p: any) => ({ ...p, [field]: e.target.value }));
   const setSelect = (field: string) => (value: string) => setForm((p: any) => ({ ...p, [field]: value }));
 
-  // Owners
-  const addOwnerAssignment = (owner: Owner) => {
-    if (assignments.find(a => a.ownerId === owner._id)) { toast.error("Owner already added"); return; }
-    const newA: OwnerAssignment = {
-      ownerId: owner._id,
-      ownerName: owner.ownerName,
-      ownershipPercentage: "",
+  const addOwnerAssignment = (owner?: Owner) => {
+    const newAssign: OwnerAssignment = {
+      ownerId: owner?._id || "",
+      ownerName: owner?.ownerName || "",
+      ownerMobile: owner?.mobileNo || "",
+      ownerDetails: (owner as any)?.ownerDetails || "",
+      bankPayouts: owner?.bankAccounts?.length 
+        ? owner.bankAccounts.map(b => ({
+            ...EMPTY_NEW_BANK,
+            accountHolder: b.accountHolder || owner.ownerName || "",
+            accountNo: b.accountNo || "",
+            bankName: b.bankName || "",
+            ifsc: b.ifsc || "",
+            branchName: b.branchName || "",
+          }))
+        : [{
+            ...EMPTY_NEW_BANK,
+            accountHolder: owner?.ownerName || "",
+          }],
       ownerMonthlyRent: "",
-      bankMode: owner.bankAccounts?.length ? "existing" : "new",
-      selectedBankAccountId: owner.bankAccounts?.[0]?._id ?? "",
-      newBank: { ...EMPTY_NEW_BANK }
     };
-    setAssignments(p => [...p, newA]);
+    setAssignments(p => [...p, newAssign]);
     setExpandedAssign(p => [...p, true]);
-    setOwnerPickerOpen(false);
   };
 
   const removeAssignment = (idx: number) => {
     const target = assignments[idx];
-    if (target._id) setRemovedOwnerIds(p => [...p, target._id!]);
+    // Track all bank payout IDs for this owner for backend deletion
+    target.bankPayouts.forEach(b => {
+      if (b._id) setRemovedAssignIds(prev => [...prev, b._id!]);
+    });
     setAssignments(p => p.filter((_, i) => i !== idx));
     setExpandedAssign(p => p.filter((_, i) => i !== idx));
   };
 
-  const updateAssignment = (idx: number, field: keyof OwnerAssignment, value: any) => {
-    setAssignments(p => { const c = [...p]; c[idx] = { ...c[idx], [field]: value }; return c; });
+  const updateAssignment = (idx: number, field: keyof OwnerAssignment, val: any) => {
+    setAssignments(p => {
+      const n = [...p];
+      n[idx] = { ...n[idx], [field]: val };
+      return n;
+    });
   };
 
-  // Consumers logic managed by ConsumerSelect
-  const handleConsumerChange = (ids: string[]) => {
-    setElectricityConsumerIds(ids);
+  const updateBankPayout = (assignIdx: number, bankIdx: number, field: keyof BankPayout, val: any) => {
+    setAssignments(p => {
+      const n = [...p];
+      const banks = [...n[assignIdx].bankPayouts];
+      banks[bankIdx] = { ...banks[bankIdx], [field]: val };
+      n[assignIdx] = { ...n[assignIdx], bankPayouts: banks };
+      return n;
+    });
   };
 
-  const totalPct = assignments.reduce((sum, a) => sum + (Number(a.ownershipPercentage) || 0), 0);
+  const addBankPayout = (assignIdx: number) => {
+    setAssignments(p => {
+      const n = [...p];
+      n[assignIdx] = { 
+        ...n[assignIdx], 
+        bankPayouts: [...n[assignIdx].bankPayouts, { ...EMPTY_NEW_BANK }] 
+      };
+      return n;
+    });
+  };
 
-  // ── SUBMIT ──────────────────────────────────────────────────────────────────
+  const removeBankPayout = (assignIdx: number, bankIdx: number) => {
+    setAssignments(p => {
+      const n = [...p];
+      if (n[assignIdx].bankPayouts.length > 1) {
+        const target = n[assignIdx].bankPayouts[bankIdx];
+        if (target._id) setRemovedAssignIds(prev => [...prev, target._id!]);
+        n[assignIdx].bankPayouts = n[assignIdx].bankPayouts.filter((_, i) => i !== bankIdx);
+      } else {
+        toast.error("At least one bank payout is required");
+      }
+      return n;
+    });
+  };
+
+  const handleNewOwnerSaved = async (formData?: any) => {
+    setIsNewOwnerModalOpen(false);
+    await fetchData(); // refresh list to see new owner
+    
+    if (formData && !formData._id) {
+       toast.success("New owner created. You can now select them from the list.");
+    }
+  };
+
+  // ── Sequential Submission (Matches DefaultInputs) ───────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (totalPct > 100) { toast.error("Total ownership exceeds 100%"); return; }
     setSubmitting(true);
-
     try {
       const siteId = params.id;
-      // 1. Update Site Core
-      const sitePayload: any = {};
-      Object.entries(form).forEach(([k, v]) => { if (v !== "") sitePayload[k] = v; });
-      const siteRes = await fetch(`${API}/api/rent/sites/${siteId}`, {
-        method: "PUT",
-        headers: authHeaders(),
-        body: JSON.stringify(sitePayload)
-      });
-      if (!siteRes.ok) throw new Error("Failed to update site info");
+      
+      // Step 1: Sync Owners (Add New or update Profile)
+      const finalizedAssignments = [];
+      for (const assign of assignments) {
+        let ownerId = assign.ownerId;
+        const ownerPayload = {
+          ownerName: assign.ownerName,
+          mobileNo: assign.ownerMobile,
+          ownerDetails: assign.ownerDetails,
+          bankAccounts: assign.bankPayouts.map(p => ({
+            _id: p._id, // Include ID if it's an existing bank account being updated
+            accountHolder: p.accountHolder,
+            accountNo: p.accountNo,
+            bankName: p.bankName,
+            ifsc: p.ifsc,
+            branchName: p.branchName,
+            details: p.details
+          }))
+        };
 
-      // 2. Handle Owners
-      // Delete removed
-      for (const id of removedOwnerIds) {
-        await fetch(`${API}/api/rent/owners/site-owner/${id}`, { method: "DELETE", headers: authHeaders() });
-      }
-      // Update or Add
-      for (const a of assignments) {
-        const payload: any = { siteId, ownerId: a.ownerId, ownershipPercentage: Number(a.ownershipPercentage), ownerMonthlyRent: Number(a.ownerMonthlyRent) };
-        if (a.bankMode === "new") Object.assign(payload, a.newBank);
-        else if (a.selectedBankAccountId) {
-          const owner = allOwners.find(o => o._id === a.ownerId);
-          const bank = owner?.bankAccounts?.find(b => b._id === a.selectedBankAccountId);
-          if (bank) {
-             payload.accountHolder = bank.accountHolder; payload.accountNo = bank.accountNo;
-             payload.bankName = bank.bankName; payload.ifsc = bank.ifsc; payload.branchName = bank.branchName;
-          }
-        } else {
-          // Keep existing if no change
-          Object.assign(payload, a.newBank);
+        if (!ownerId && assign.ownerName) {
+           // Create New Owner
+            const oRes = await fetch(`${API}/api/rent/owners/`, { 
+              method: "POST", 
+              headers: authHeaders(), 
+              body: JSON.stringify(ownerPayload) 
+            });
+            if (oRes.ok) {
+              const oJson = await oRes.json();
+              ownerId = oJson.data?._id || oJson._id;
+            }
+        } else if (ownerId) {
+            // Update Existing Owner Profile with all bank accounts
+            console.log("🚀 [Update Site] Syncing Owner Profile:", ownerPayload);
+            await fetch(`${API}/api/rent/owners/${ownerId}`, { 
+              method: "PUT", 
+              headers: authHeaders(), 
+              body: JSON.stringify(ownerPayload) 
+            });
         }
+        finalizedAssignments.push({ ...assign, ownerId });
+      }
 
-        if (a._id) {
-          // Update existing assignment
-          await fetch(`${API}/api/rent/owners/site-owner/${a._id}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(payload) });
+      // Step 2: Sync Consumers
+      const consumerIds: string[] = [];
+      for (const c of fullElectricityConsumers) {
+         const consumerPayload = { consumerNo: c.consumerNo, consumerName: c.consumerName, electricityProvider: c.electricityProvider };
+         if (c._id && !c._id.startsWith("new")) {
+            // Update Existing Profile
+            await fetch(`${API}/api/rent/siteConsumer/${c._id}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(consumerPayload) });
+            consumerIds.push(c._id);
+         } else {
+            // Create New Profile
+            const cRes = await fetch(`${API}/api/rent/siteConsumer`, { method: "POST", headers: authHeaders(), body: JSON.stringify(consumerPayload) });
+            if (cRes.ok) {
+               const cJson = await cRes.json();
+               const cid = cJson.data?._id || cJson._id;
+               if (cid) consumerIds.push(cid);
+            }
+         }
+      }
+
+      // Step 3: Update Site Core
+      const sRes = await fetch(`${API}/api/rent/sites/${siteId}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(form) });
+      if (!sRes.ok) throw new Error("Failed to update site basics");
+
+      // Step 4: Sync Assignments
+      // A. Remove Deletions
+      for (const rid of removedAssignIds) {
+         await fetch(`${API}/api/rent/owners/site-owner/${rid}`, { method: "DELETE", headers: authHeaders() });
+      }
+      for (const rid of removedConsumerIds) {
+         await fetch(`${API}/api/rent/siteConsumer/assign/${siteId}/${rid}`, { method: "DELETE", headers: authHeaders() });
+      }
+
+      // B. Create/Update Assignments
+      for (const assign of finalizedAssignments) {
+        if (!assign.ownerId) continue;
+        
+        const assignPayload: any = {
+          siteId,
+          ownerId: assign.ownerId,
+          ownerMonthlyRent: Number(assign.ownerMonthlyRent) || 0,
+        };
+        
+        // Find existing SiteOwner record ID if it exists
+        const existingAssignmentId = assign.bankPayouts[0]?._id;
+        
+        if (existingAssignmentId) {
+           // Update Existing Link
+           await fetch(`${API}/api/rent/owners/site-owner/${existingAssignmentId}`, { 
+             method: "PUT", 
+             headers: authHeaders(), 
+             body: JSON.stringify(assignPayload) 
+           });
         } else {
-          // Create new assignment
-          await fetch(`${API}/api/rent/owners/site-owner/assign`, { method: "POST", headers: authHeaders(), body: JSON.stringify(payload) });
+           // Create New Link
+           await fetch(`${API}/api/rent/owners/site-owner/assign`, { 
+             method: "POST", 
+             headers: authHeaders(), 
+             body: JSON.stringify(assignPayload) 
+           });
         }
       }
 
-      // 3. Handle Consumers
-      // Find added and removed
-      const addedConsumerIds = electricityConsumerIds.filter(id => !initialConsumerIds.includes(id));
-      const removedConsumerIds = initialConsumerIds.filter(id => !electricityConsumerIds.includes(id));
-
-      // Assign added
-      for (const consumerId of addedConsumerIds) {
-        await fetch(`${API}/api/rent/siteConsumer/assign`, {
-          method: "POST",
-          headers: authHeaders(),
-          body: JSON.stringify({ siteId, consumerId })
-        });
-      }
-      // Remove removed
-      for (const consumerId of removedConsumerIds) {
-        await fetch(`${API}/api/rent/siteConsumer/remove`, {
-          method: "POST",
-          headers: authHeaders(),
-          body: JSON.stringify({ siteId, consumerId })
-        });
+      // C. Consumer Assignments (Ensure all present linked)
+      for (const cid of consumerIds) {
+         // The backend handled link upon creation in some flows, but to be sure:
+         await fetch(`${API}/api/rent/siteConsumer/assign`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ siteId, consumerId: cid }) });
       }
 
-      toast.success("Site updated successfully!");
+      toast.success("Site configuration synchronized successfully!");
       router.push(`/sites/${siteId}`);
     } catch (err: any) {
-      toast.error(err.message || "Update failed");
+      toast.error(err.message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // ── Handle new owner created in modal ──────────────────────────────────────
-  const handleNewOwnerSaved = async (formData: any) => {
-    try {
-      // 1. Create Owner Profile (Basic info + first bank)
-      const res = await fetch(`${API}/api/rent/owners/`, {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify({
-          ownerName: formData.ownerName,
-          mobileNo: formData.mobileNo,
-          ownerDetails: formData.ownerDetails,
-          ...(formData.bankAccounts?.[0] || {})
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Failed to create owner profile");
-      }
-
-      const savedResponse = await res.json();
-      const ownerId = savedResponse.data?._id;
-
-      // 2. Add extra bank accounts if any
-      if (ownerId && formData.bankAccounts && formData.bankAccounts.length > 1) {
-        for (let i = 1; i < formData.bankAccounts.length; i++) {
-          const bank = formData.bankAccounts[i];
-          await fetch(`${API}/api/rent/owners/${ownerId}/bank-accounts`, {
-            method: "POST",
-            headers: authHeaders(),
-            body: JSON.stringify({
-              accountHolder: bank.accountHolder,
-              accountNo: bank.accountNo,
-              bankName: bank.bankName,
-              ifsc: bank.ifsc,
-              branchName: bank.branchName,
-              details: bank.details,
-            }),
-          });
-        }
-      }
-
-      // 3. Refresh owner list
-      await fetchOwners();
-      
-      toast.success("Owner created and selected!");
-      
-      const newOwnerObj: Owner = {
-        _id: ownerId,
-        ownerName: formData.ownerName,
-        mobileNo: formData.mobileNo,
-        bankAccounts: formData.bankAccounts || []
-      };
-      
-      addOwnerAssignment(newOwnerObj);
-
-    } catch (err: any) {
-      toast.error(err.message || "Something went wrong creating owner");
-    }
-  };
-
-  if (loading) return <div className="p-10 text-center">Loading site for edit...</div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+      <RefreshCw className="animate-spin text-indigo-600" size={32} />
+      <p className="text-gray-500 font-medium">Synchronizing configurations...</p>
+    </div>
+  );
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
-      <div className="flex items-center justify-between">
-        <button onClick={() => router.back()} className="flex items-center gap-2 text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors">
-          <ArrowLeft size={18} />
-          <span className="text-sm font-medium">Cancel Edit</span>
-        </button>
-        <h1 className="text-lg font-bold text-gray-800 dark:text-white">Edit Site: {form.siteName}</h1>
+      {/* ── Page Hero ── */}
+      <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-5 text-white shadow-lg shadow-indigo-500/20">
+        <div className="flex items-center justify-between">
+           <div>
+              <h2 className="text-xl font-bold">Site Configuration</h2>
+              <p className="text-indigo-100 text-sm mt-1">Configure all site parameters, tenant info, and owner assignments in one place.</p>
+           </div>
+           <button onClick={() => router.back()} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors">
+              <ArrowLeft size={20} />
+           </button>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* ── Section: Metadata & Links ── */}
+        {/* ── Section: Centre Assignment ── */}
         <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
-          <SectionHeader icon={Building2} title="Site Metadata & Links" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-             <div className="sm:col-span-2">
-               <Label>Centre *</Label>
-               <div className="relative">
-                 <select value={form.centreId} onChange={(e) => setForm((p: any) => ({ ...p, centreId: e.target.value }))} required className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-white/[0.08] rounded-lg bg-white dark:bg-white/[0.03] text-gray-800 dark:text-white appearance-none pr-8">
-                   <option value="">Select Centre</option>
-                   {centres.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-                 </select>
-                 <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><ChevronDownIcon /></span>
-               </div>
-             </div>
-             <Field label="Site Code"><Input value={form.code} onChange={setField("code")} /></Field>
-             <Field label="Site Name *"><Input value={form.siteName} onChange={setField("siteName")} required /></Field>
-             <Field label="Site Mobile No."><Input value={form.siteMobileNo} onChange={setField("siteMobileNo")} /></Field>
-             <Field label="Property Type"><div className="relative"><Select options={PROPERTY_TYPES} value={form.propertyType} onChange={setSelect("propertyType")} /><span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><ChevronDownIcon /></span></div></Field>
-             <Field label="Status"><div className="relative"><Select options={STATUS_OPTS} value={form.status} onChange={setSelect("status")} /><span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><ChevronDownIcon /></span></div></Field>
-             <Field label="Payment Day"><Input type="number" value={form.paymentDay} onChange={setField("paymentDay")} /></Field>
-             <Field label="Property Location" span2><Input value={form.propertyLocation} onChange={setField("propertyLocation")} /></Field>
-             <Field label="Property Address" span2><Input value={form.propertyAddress} onChange={setField("propertyAddress")} /></Field>
-             <Field label="City"><Input value={form.city} onChange={setField("city")} /></Field>
-             <Field label="Pincode"><Input value={form.pincode} onChange={setField("pincode")} /></Field>
-             <Field label="Area Size"><Input value={form.areaSize} onChange={setField("areaSize")} /></Field>
-             <Field label="Unit (sq.ft / sq.m)"><Input value={form.unit} onChange={setField("unit")} /></Field>
-             <Field label="Google Maps Link"><Input value={form.glocationLink} onChange={setField("glocationLink")} placeholder="https://maps..." /></Field>
-             <Field label="Website Link"><Input value={form.websiteLink} onChange={setField("websiteLink")} placeholder="https://..." /></Field>
-             <Field label="Google Drive Link"><Input value={form.gdriveLink} onChange={setField("gdriveLink")} placeholder="https://drive..." /></Field>
-          </div>
-        </div>
-
-        {/* ── Section: Tenant Details ── */}
-        <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
-          <SectionHeader icon={Users} title="Tenant Information" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-             <Field label="Tenant Name"><Input value={form.tenantName} onChange={setField("tenantName")} /></Field>
-             <Field label="Tenant Mobile"><Input value={form.tenantMobileNo} onChange={setField("tenantMobileNo")} /></Field>
-             <Field label="Tenant Email"><Input type="email" value={form.tenantEmail} onChange={setField("tenantEmail")} /></Field>
-             <Field label="Tenant Address" span2><Input value={form.tenantAddress} onChange={setField("tenantAddress")} /></Field>
-          </div>
-        </div>
-
-        {/* ── Section: Rent & Agreement ── */}
-        <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
-          <SectionHeader icon={Landmark} title="Financial & Agreement" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-             <Field label="Rent Type"><div className="relative"><Select options={RENT_TYPE_OPTS} value={form.rentType} onChange={setSelect("rentType")} /><span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><ChevronDownIcon /></span></div></Field>
-             <Field label="Monthly Rent (₹)"><Input type="number" value={form.monthlyRent} onChange={setField("monthlyRent")} /></Field>
-             <Field label="Increased Rent (₹)"><Input type="number" value={form.increasedRent} onChange={setField("increasedRent")} /></Field>
-             <Field label="Deposit (₹)"><Input type="number" value={form.deposit} onChange={setField("deposit")} /></Field>
-             <Field label="Yearly Escalation (%)"><Input type="number" value={form.yearlyEscalationPercentage} onChange={setField("yearlyEscalationPercentage")} /></Field>
-             <Field label="Escalation (%)"><Input type="number" value={form.escalationPercentage} onChange={setField("escalationPercentage")} /></Field>
-             <Field label="Agreement Start Date"><Input type="date" value={form.agreementDate} onChange={setField("agreementDate")} /></Field>
-             <Field label="Agreement Expiry Date"><Input type="date" value={form.agreementExpiring} onChange={setField("agreementExpiring")} /></Field>
-             <Field label="Agreement Years"><Input type="number" value={form.agreementYears} onChange={setField("agreementYears")} /></Field>
-             <Field label="Rent Start Date"><Input type="date" value={form.rentStartDate} onChange={setField("rentStartDate")} /></Field>
-             <Field label="Fitout Date"><Input type="date" value={form.fitoutTime} onChange={setField("fitoutTime")} /></Field>
-             <Field label="MSEB Deposit (₹)"><Input type="number" value={form.msebDeposit} onChange={setField("msebDeposit")} /></Field>
-          </div>
-        </div>
-
-        {/* ── Section: Statutory & Financials ── */}
-        <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
-          <SectionHeader icon={Landmark} title="Statutory & Additional Charges" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-             <Field label="Maintenance Charges (₹)"><Input type="number" value={form.maintenanceCharges} onChange={setField("maintenanceCharges")} /></Field>
-             <Field label="Municipal Tax (₹)"><Input type="number" value={form.municipalTax} onChange={setField("municipalTax")} /></Field>
-             <Field label="CMA / CAM Charges (₹)"><Input type="number" value={form.cmaCharges} onChange={setField("cmaCharges")} /></Field>
-             <Field label="GST Charges (₹)"><Input type="number" value={form.gstCharges} onChange={setField("gstCharges")} /></Field>
-             <Field label="Water Charges (₹)"><Input type="number" value={form.waterCharges} onChange={setField("waterCharges")} /></Field>
-             <Field label="Managed By"><Input value={form.managedBy} onChange={setField("managedBy")} /></Field>
-          </div>
-        </div>
-
-        {/* ── Section: Authority & Agency ── */}
-        <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
-          <SectionHeader icon={Users} title="Authority & Agency" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-             <Field label="Authorised By"><Input value={form.authorisedBy} onChange={setField("authorisedBy")} /></Field>
-             <Field label="Commission (Authorised Person)"><Input type="number" value={form.authorisedPersonCommission} onChange={setField("authorisedPersonCommission")} /></Field>
-             <Field label="Agent Cost (₹)"><Input type="number" value={form.agentCost} onChange={setField("agentCost")} /></Field>
-             <Field label="Agent Details" span2><Input value={form.agentDetails} onChange={setField("agentDetails")} /></Field>
-          </div>
-        </div>
-
-        {/* ── Section: Owners ── */}
-        <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
-          <SectionHeader icon={Users} title="Owner Assignments" action={
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setIsNewOwnerModalOpen(true)} className="px-3 py-1.5 border border-dashed border-indigo-300 text-indigo-600 text-xs font-semibold rounded-lg hover:bg-indigo-50 transition-colors">New Owner</button>
-              <button type="button" onClick={() => setOwnerPickerOpen(!ownerPickerOpen)} className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors">Add Existing</button>
-            </div>
-          }/>
-
-          {ownerPickerOpen && (
-            <div className="mb-4 border border-gray-100 dark:border-white/[0.08] rounded-xl overflow-hidden shadow-sm">
-               <div className="p-3 bg-gray-50 dark:bg-white/[0.03]">
-                 <input type="text" placeholder="Search owners..." value={ownerSearch} onChange={e => setOwnerSearch(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-white/[0.08] rounded-lg bg-white dark:bg-white/[0.03] text-gray-800 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
-               </div>
-               <div className="max-h-48 overflow-y-auto divide-y divide-gray-50 dark:divide-white/[0.04]">
-                  {allOwners.filter(o => !assignments.find(a => a.ownerId === o._id) && (o.ownerName.toLowerCase().includes(ownerSearch.toLowerCase()))).map(owner => (
-                    <button key={owner._id} type="button" onClick={() => addOwnerAssignment(owner)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-indigo-50 dark:hover:bg-white/[0.03] transition-colors text-left">
-                       <div><p className="font-medium text-sm text-gray-800 dark:text-white">{owner.ownerName}</p><p className="text-xs text-gray-400">{owner.mobileNo}</p></div>
-                       <Plus size={14} className="text-indigo-500" />
-                    </button>
+          <SectionHeader icon={Building2} title="Centre Assignment" subtitle="Select the centre this site belongs to" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <Label>Centre *</Label>
+              <div className="relative">
+                <select
+                  value={form.centreId}
+                  onChange={(e) => setForm((p: any) => ({ ...p, centreId: e.target.value }))}
+                  required
+                  className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-white/[0.08] rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 appearance-none pr-8"
+                >
+                  <option value="" className="dark:bg-gray-950">Select a centre</option>
+                  {centres.map((c) => (
+                    <option key={c._id} value={c._id} className="dark:bg-gray-950">{c.name}</option>
                   ))}
-               </div>
-            </div>
-          )}
-
-          <div className="space-y-3">
-            {assignments.map((a, idx) => (
-              <div key={idx} className="border border-gray-100 dark:border-white/[0.08] rounded-xl overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-white/[0.03] cursor-pointer" onClick={() => setExpandedAssign(p => { const c = [...p]; c[idx] = !c[idx]; return c; })}>
-                   <div className="flex items-center gap-3">
-                     <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 font-bold text-xs uppercase">{a.ownerName.charAt(0)}</div>
-                     <div><p className="font-semibold text-sm text-gray-800 dark:text-white">{a.ownerName}</p><p className="text-xs text-indigo-500">{a.ownershipPercentage || 0}% Ownership</p></div>
-                   </div>
-                   <div className="flex items-center gap-2">
-                     <button type="button" onClick={(e) => { e.stopPropagation(); removeAssignment(idx); }} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={14} /></button>
-                     {expandedAssign[idx] ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                   </div>
-                </div>
-                {expandedAssign[idx] && (
-                  <div className="p-4 space-y-4 bg-white dark:bg-gray-900 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     <Field label="Ownership %"><Input type="number" value={a.ownershipPercentage} onChange={e => updateAssignment(idx, "ownershipPercentage", e.target.value)} /></Field>
-                     <Field label="Monthly Rent (₹)"><Input type="number" value={a.ownerMonthlyRent} onChange={e => updateAssignment(idx, "ownerMonthlyRent", e.target.value)} /></Field>
-                  </div>
-                )}
+                </select>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><ChevronDownIcon /></span>
               </div>
-            ))}
+            </div>
           </div>
         </div>
 
-        {/* ── Section: Electricity ── */}
+        {/* ── Section: Basic Info ── */}
         <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
-           <SectionHeader icon={Zap} title="Electricity Consumers" subtitle="Manage consumer assignments for this site" />
-           <ConsumerSelect 
-             selectedConsumerIds={electricityConsumerIds} 
-             onChange={handleConsumerChange} 
-             label="" 
-           />
-           {/* Detailed Cards for selected consumers */}
-           {electricityConsumerIds.length > 0 && (
-             <div className="mt-4 space-y-3">
-               {electricityConsumerIds.map((id) => {
-                 const c = allConsumers.find(item => item._id === id);
-                 if (!c) return null;
-                 return (
-                   <div key={id} className="p-4 border border-gray-100 dark:border-white/[0.08] rounded-xl bg-gray-50/50 dark:bg-white/[0.02] flex items-center justify-between group">
-                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                           <Zap size={20} fill="currentColor" />
-                        </div>
-                        <div>
-                           <p className="font-bold text-sm text-gray-800 dark:text-white uppercase tracking-tight">{c.consumerNo}</p>
-                           <p className="text-xs text-gray-400 font-medium">{c.consumerName || "Untitled Consumer"} • {c.electricityProvider || "General"}</p>
-                        </div>
+          <SectionHeader icon={Building2} title="Basic Site Information" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Field label="Site Code"><Input type="text" value={form.code} onChange={setField("code")} placeholder="e.g. SITE-001" /></Field>
+            <Field label="Site Name *"><Input type="text" value={form.siteName} onChange={setField("siteName")} required /></Field>
+            <Field label="Site Mobile No."><Input type="tel" value={form.siteMobileNo} onChange={setField("siteMobileNo")} /></Field>
+            <Field label="Property Type">
+              <div className="relative">
+                <Select options={PROPERTY_TYPES} value={form.propertyType} onChange={setSelect("propertyType")} />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><ChevronDownIcon /></span>
+              </div>
+            </Field>
+            <Field label="Status">
+              <div className="relative">
+                <Select options={STATUS_OPTS} value={form.status} onChange={setSelect("status")} />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><ChevronDownIcon /></span>
+              </div>
+            </Field>
+            <Field label="Payment Day"><Input type="number" value={form.paymentDay} onChange={setField("paymentDay")} /></Field>
+            <Field label="Property Location" span2><Input type="text" value={form.propertyLocation} onChange={setField("propertyLocation")} /></Field>
+            <Field label="Property Address" span2><Input type="text" value={form.propertyAddress} onChange={setField("propertyAddress")} /></Field>
+            <Field label="City"><Input type="text" value={form.city} onChange={setField("city")} /></Field>
+            <Field label="Pincode"><Input type="text" value={form.pincode} onChange={setField("pincode")} /></Field>
+            <Field label="Area Size"><Input type="number" value={form.areaSize} onChange={setField("areaSize")} /></Field>
+            <Field label="Unit (sq.ft / sq.m)"><Input type="text" value={form.unit} onChange={setField("unit")} /></Field>
+            <Field label="Google Maps Link" span2><Input type="url" value={form.glocationLink} onChange={setField("glocationLink")} /></Field>
+            <Field label="Website Link"><Input type="url" value={form.websiteLink} onChange={setField("websiteLink")} /></Field>
+            <Field label="Google Drive Link"><Input type="url" value={form.gdriveLink} onChange={setField("gdriveLink")} /></Field>
+            <Field label="Managed By"><Input type="text" value={form.managedBy} onChange={setField("managedBy")} /></Field>
+            <Field label="Authorised By"><Input type="text" value={form.authorisedBy} onChange={setField("authorisedBy")} /></Field>
+            <Field label="Commission (Authorised Person)"><Input type="number" value={form.authorisedPersonCommission} onChange={setField("authorisedPersonCommission")} /></Field>
+          </div>
+        </div>
+
+        {/* ── Section: Tenant Info ── */}
+        <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
+          <SectionHeader icon={FileText} title="Tenant Information" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Field label="Tenant Name"><Input type="text" value={form.tenantName} onChange={setField("tenantName")} /></Field>
+            <Field label="Tenant Mobile"><Input type="tel" value={form.tenantMobileNo} onChange={setField("tenantMobileNo")} /></Field>
+            <Field label="Tenant Email"><Input type="email" value={form.tenantEmail} onChange={setField("tenantEmail")} /></Field>
+            <Field label="Tenant Address" span2><Input type="text" value={form.tenantAddress} onChange={setField("tenantAddress")} /></Field>
+          </div>
+        </div>
+
+        {/* ── Section: Financial & Rent Details ── */}
+        <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
+          <SectionHeader icon={Landmark} title="Financial & Rent Details" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Field label="Rent Type">
+              <div className="relative">
+                <Select options={RENT_TYPE_OPTS} value={form.rentType} onChange={setSelect("rentType")} />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><ChevronDownIcon /></span>
+              </div>
+            </Field>
+            <Field label="Monthly Rent (₹)"><Input type="number" value={form.monthlyRent} onChange={setField("monthlyRent")} /></Field>
+            <Field label="Increased Rent (₹)"><Input type="number" value={form.increasedRent} onChange={setField("increasedRent")} /></Field>
+            <Field label="Deposit (₹)"><Input type="number" value={form.deposit} onChange={setField("deposit")} /></Field>
+            <Field label="Maintenance Charges (₹)"><Input type="number" value={form.maintenanceCharges} onChange={setField("maintenanceCharges")} /></Field>
+            <Field label="Municipal Tax (₹)"><Input type="number" value={form.municipalTax} onChange={setField("municipalTax")} /></Field>
+            <Field label="CMA / CAM Charges (₹)"><Input type="number" value={form.cmaCharges} onChange={setField("cmaCharges")} /></Field>
+            <Field label="GST Charges (₹)"><Input type="number" value={form.gstCharges} onChange={setField("gstCharges")} /></Field>
+            <Field label="Water Charges (₹)"><Input type="number" value={form.waterCharges} onChange={setField("waterCharges")} /></Field>
+            <Field label="MSEB Deposit (₹)"><Input type="number" value={form.msebDeposit} onChange={setField("msebDeposit")} /></Field>
+            <Field label="Yearly Escalation (%)"><Input type="number" value={form.yearlyEscalationPercentage} onChange={setField("yearlyEscalationPercentage")} /></Field>
+            <Field label="Escalation (%)"><Input type="number" value={form.escalationPercentage} onChange={setField("escalationPercentage")} /></Field>
+            <Field label="Agent Details"><Input type="text" value={form.agentDetails} onChange={setField("agentDetails")} /></Field>
+            <Field label="Agent Cost (₹)"><Input type="number" value={form.agentCost} onChange={setField("agentCost")} /></Field>
+          </div>
+        </div>
+
+        {/* ── Section: Agreement Details ── */}
+        <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
+          <SectionHeader icon={FileText} title="Agreement Details" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Field label="Agreement Start Date"><Input type="date" value={form.agreementDate} onChange={setField("agreementDate")} /></Field>
+            <Field label="Agreement Expiry Date"><Input type="date" value={form.agreementExpiring} onChange={setField("agreementExpiring")} /></Field>
+            <Field label="Agreement Years"><Input type="number" value={form.agreementYears} onChange={setField("agreementYears")} /></Field>
+            <Field label="Rent Start Date"><Input type="date" value={form.rentStartDate} onChange={setField("rentStartDate")} /></Field>
+            <Field label="Fitout Date"><Input type="date" value={form.fitoutTime} onChange={setField("fitoutTime")} /></Field>
+          </div>
+        </div>
+
+        {/* ── Section: Electricity Consumers ── */}
+        <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
+           <SectionHeader icon={Zap} title="Electricity Consumers" action={
+             <button
+               type="button"
+               onClick={() => {
+                 setFullElectricityConsumers([...fullElectricityConsumers, { _id: `new-${Date.now()}`, consumerNo: "", consumerName: "", electricityProvider: "" }]);
+               }}
+               className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
+             >
+               <Plus size={14} /> Add Consumer
+             </button>
+           }/>
+
+           <div className="mt-4 space-y-4">
+             {fullElectricityConsumers.map((c, idx) => (
+                <div key={idx} className="p-5 border border-gray-100 dark:border-white/[0.08] rounded-2xl bg-gray-50/50 dark:bg-white/[0.02] space-y-4 relative group">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (c._id && !c._id.startsWith("new")) setRemovedConsumerIds(p => [...p, c._id]);
+                      setFullElectricityConsumers(p => p.filter((_, i) => i !== idx));
+                    }}
+                    className="absolute top-4 right-4 p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+
+                  <div className="flex items-center gap-3 mb-2">
+                     <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                        <Zap size={20} fill="currentColor" />
                      </div>
-                     <button
-                       type="button"
-                       onClick={() => handleConsumerChange(electricityConsumerIds.filter(cid => cid !== id))}
-                       className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                     >
-                       <Trash2 size={16} />
-                     </button>
-                   </div>
-                 );
-               })}
-             </div>
-           )}
+                     <div>
+                        <p className="font-bold text-sm text-gray-800 dark:text-white uppercase tracking-tight">{c.consumerNo || "New Consumer"}</p>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{c.electricityProvider || "Provider TBD"}</p>
+                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Field label="Consumer Number"><Input value={c.consumerNo} onChange={e => { const n = [...fullElectricityConsumers]; n[idx].consumerNo = e.target.value; setFullElectricityConsumers(n); }} /></Field>
+                    <Field label="Consumer Name / Label"><Input value={c.consumerName} onChange={e => { const n = [...fullElectricityConsumers]; n[idx].consumerName = e.target.value; setFullElectricityConsumers(n); }} /></Field>
+                    <Field label="Electricity Provider"><Input value={c.electricityProvider} onChange={e => { const n = [...fullElectricityConsumers]; n[idx].electricityProvider = e.target.value; setFullElectricityConsumers(n); }} /></Field>
+                  </div>
+                </div>
+             ))}
+             {fullElectricityConsumers.length === 0 && (
+               <div className="py-8 text-center border-2 border-dashed border-gray-100 dark:border-white/[0.05] rounded-2xl">
+                 <p className="text-sm text-gray-400 font-medium">No electricity consumers added yet.</p>
+               </div>
+             )}
+           </div>
+        </div>
+
+        {/* ── Section: Owner Assignments ── */}
+        <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
+          <SectionHeader
+            icon={Users}
+            title="Owner Assignments"
+            action={
+               <button type="button" onClick={() => addOwnerAssignment()}
+                 className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors">
+                 <Plus size={14} /> Add Owner
+               </button>
+            }
+          />
+
+          <div className="space-y-4">
+            {assignments.length === 0 ? (
+              <div className="py-10 text-center border-2 border-dashed border-gray-100 dark:border-white/[0.05] rounded-xl">
+                <Users size={28} className="mx-auto text-gray-200 dark:text-gray-700 mb-2" />
+                <p className="text-sm text-gray-400 font-medium">No owners added yet</p>
+              </div>
+            ) : (
+              assignments.map((a, idx) => (
+                <div key={idx} className="border border-gray-100 dark:border-white/[0.08] rounded-2xl overflow-hidden shadow-sm bg-white dark:bg-gray-900/50">
+                  <div 
+                    className="flex items-center justify-between px-5 py-4 bg-gray-50/50 dark:bg-white/[0.02] cursor-pointer group/header"
+                    onClick={() => setExpandedAssign(prev => { const n = [...prev]; n[idx] = !n[idx]; return n; })}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-sm shadow-inner group-hover/header:scale-110 transition-transform">
+                        {a.ownerName ? a.ownerName.charAt(0).toUpperCase() : <Users size={18} />}
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm text-gray-800 dark:text-white uppercase tracking-tight">{a.ownerName || "New Owner Assignment"}</p>
+                        <p className="text-[10px] font-medium text-gray-400 mt-0.5">{a.ownerMobile || "No Mobile"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <button type="button" onClick={(e) => { e.stopPropagation(); removeAssignment(idx); }} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
+                         <Trash2 size={16} />
+                       </button>
+                       {expandedAssign[idx] ? <ChevronUp size={18} className="text-gray-300" /> : <ChevronDown size={18} className="text-gray-300" />}
+                    </div>
+                  </div>
+
+                  {expandedAssign[idx] && (
+                    <div className="p-5 space-y-6 border-t border-gray-50 dark:border-white/[0.02]">
+                       <div>
+                          <div className="flex items-center gap-2 mb-4 border-b border-gray-50 dark:border-white/[0.04] pb-2">
+                             <Users size={14} className="text-indigo-500" />
+                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Master Identity</span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Field label="Owner Name"><Input value={a.ownerName} onChange={e => updateAssignment(idx, "ownerName", e.target.value)} /></Field>
+                            <Field label="Mobile No."><Input value={a.ownerMobile} onChange={e => updateAssignment(idx, "ownerMobile", e.target.value)} /></Field>
+                          </div>
+                       </div>
+
+                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                         <Field label="Monthly Rent (₹)"><Input type="number" value={a.ownerMonthlyRent} onChange={e => updateAssignment(idx, "ownerMonthlyRent", e.target.value)} /></Field>
+                         <Field label="Address / Remarks"><Input value={a.ownerDetails} onChange={e => updateAssignment(idx, "ownerDetails", e.target.value)} /></Field>
+                       </div>
+
+                       <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-white/[0.05]">
+                          <div className="flex items-center justify-between mb-2">
+                             <div className="flex items-center gap-2 group/bank">
+                               <Landmark size={14} className="text-indigo-500 transition-transform" />
+                               <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Bank Payout Configuration</span>
+                             </div>
+                             <button 
+                               type="button" 
+                               onClick={() => addBankPayout(idx)}
+                               className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                             >
+                               <Plus size={12} /> Add Bank Account
+                             </button>
+                          </div>
+
+                          {a.bankPayouts.map((bank, bIdx) => (
+                            <div key={bIdx} className="relative p-4 bg-gray-50 dark:bg-white/[0.02] rounded-2xl border border-gray-100 dark:border-white/[0.06]">
+                               {a.bankPayouts.length > 1 && (
+                                 <button 
+                                   type="button" 
+                                   onClick={() => removeBankPayout(idx, bIdx)}
+                                   className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 rounded-md"
+                                 >
+                                   <Trash2 size={12} />
+                                 </button>
+                               )}
+                               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                  <Field label="Account Holder"><Input placeholder="Account Holder" value={bank.accountHolder} onChange={e => updateBankPayout(idx, bIdx, "accountHolder", e.target.value)} /></Field>
+                                  <Field label="Account Number"><Input placeholder="Account Number" value={bank.accountNo} onChange={e => updateBankPayout(idx, bIdx, "accountNo", e.target.value)} /></Field>
+                                  <Field label="Bank Name"><Input placeholder="Bank Name" value={bank.bankName} onChange={e => updateBankPayout(idx, bIdx, "bankName", e.target.value)} /></Field>
+                                  <Field label="IFSC Code"><Input placeholder="IFSC Code" value={bank.ifsc} onChange={e => updateBankPayout(idx, bIdx, "ifsc", e.target.value)} /></Field>
+                                  <Field label="Branch Name"><Input placeholder="Branch Name" value={bank.branchName} onChange={e => updateBankPayout(idx, bIdx, "branchName", e.target.value)} /></Field>
+                                  <Field label="Payout Notes" span2><Input placeholder="Payout Notes" value={bank.details} onChange={e => updateBankPayout(idx, bIdx, "details", e.target.value)} /></Field>
+                               </div>
+                            </div>
+                          ))}
+                       </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         {/* ── Footer ── */}
         <div className="flex items-center justify-between border-t border-gray-100 dark:border-white/[0.05] pt-6">
-           <p className="text-xs text-gray-400">{totalPct}% ownership allocated</p>
-           <button type="submit" disabled={submitting || totalPct > 100} className="flex items-center gap-2 px-8 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-indigo-500/20">
-              <Save size={18} />
-              {submitting ? "Updating Site..." : "Save Changes"}
+           <p />
+           <button type="submit" disabled={submitting} className="flex items-center gap-2 px-8 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-indigo-500/20">
+              {submitting ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
+              {submitting ? "Updating Configuration..." : "Save Changes"}
            </button>
         </div>
       </form>

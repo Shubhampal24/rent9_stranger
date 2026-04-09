@@ -5,11 +5,13 @@
 "use client";
 import React, { useState, ChangeEvent } from 'react';
 import { toast } from 'react-hot-toast';
-import { Zap, Calendar, CreditCard, Camera, Send, FileText, Trash2 } from 'lucide-react';
-import DatePicker from '@/components/form/date-picker';
+import { Zap, Calendar as CalendarIcon, CreditCard, Camera, Send, FileText, Trash2 } from 'lucide-react';
+import CustomDatePicker from '@/components/form/date-picker';
 import Label from '../Label';
 import Input from '../input/InputField';
 import Select from '../Select';
+import ReactDatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 // Paid status options
 const paidStatusOptions = [
@@ -27,9 +29,10 @@ interface ElectricityPaymentFormProps {
     }>;
     currentMonthlyRent?: number;
     consumers?: Array<{ _id?: string; consumerNo: string; consumerName?: string }>;
+    centreId?: string;
 }
 
-export default function ElectricityPaymentForm({ siteId, owners = [], currentMonthlyRent = 0, consumers = [] }: ElectricityPaymentFormProps) {
+export default function ElectricityPaymentForm({ siteId, owners = [], currentMonthlyRent = 0, consumers = [], centreId }: ElectricityPaymentFormProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [proofImage, setProofImage] = useState<File | null>(null);
 
@@ -45,7 +48,8 @@ export default function ElectricityPaymentForm({ siteId, owners = [], currentMon
         electricityConsumerNo: consumers[0]?.consumerNo || '',
         electricityConsumerId: consumers[0]?._id || '',
         paymentType: 'Online',
-        utrNumber: ''
+        utrNumber: '',
+        centreId: centreId || ''
     });
 
     // Auto-select consumer if available and not set
@@ -119,14 +123,15 @@ export default function ElectricityPaymentForm({ siteId, owners = [], currentMon
             
             // Standardizing to camelCase consistent with Rent Payments
             submitData.append('siteId', String(formData.siteId));
-            submitData.append('monthYear', formData.monthYear.toUpperCase());
+            submitData.append('monthYear', formData.monthYear);
             submitData.append('paymentDate', formData.paymentDate);
             submitData.append('paymentAmount', formData.paymentAmount);
             submitData.append('paidStatus', formData.paidStatus);
             submitData.append('units', formData.units);
             submitData.append('electricityCharges', formData.electricityCharges || formData.paymentAmount);
-            submitData.append('electricityConsumerNo', formData.electricityConsumerNo);
             submitData.append('electricityConsumerId', formData.electricityConsumerId);
+            submitData.append('electricityConsumerNo', formData.electricityConsumerNo);
+            submitData.append('centreId', formData.centreId);
             submitData.append('paymentType', formData.paymentType);
             submitData.append('utrNumber', formData.utrNumber);
 
@@ -203,16 +208,23 @@ export default function ElectricityPaymentForm({ siteId, owners = [], currentMon
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="space-y-1.5">
                         <Label htmlFor="monthYear" className="text-xs font-bold uppercase tracking-wider text-gray-400">Billing Month*</Label>
-                        <Input
-                            type="text"
-                            id="monthYear"
-                            name="monthYear"
-                            value={formData.monthYear}
-                            onChange={handleInputChange}
-                            placeholder="e.g., JUNE 2025"
-                            required
-                            className="h-10 text-sm"
-                        />
+                        <div className="relative">
+                            <CalendarIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-yellow-500 z-10" />
+                            <ReactDatePicker
+                                selected={formData.monthYear ? new Date(formData.monthYear + "-01") : null}
+                                onChange={(date) => {
+                                    if (date) {
+                                        const year = date.getFullYear();
+                                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                                        setFormData(prev => ({ ...prev, monthYear: `${year}-${month}` }));
+                                    }
+                                }}
+                                dateFormat="MMMM yyyy"
+                                showMonthYearPicker
+                                placeholderText="Select Month"
+                                className="h-10 w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:text-white"
+                            />
+                        </div>
                     </div>
 
                     <div className="space-y-1.5">
@@ -295,10 +307,10 @@ export default function ElectricityPaymentForm({ siteId, owners = [], currentMon
 
                     <div className="space-y-1.5">
                         <Label htmlFor="paymentDate" className="text-xs font-bold uppercase tracking-wider text-gray-400">Payment Date*</Label>
-                        <DatePicker
+                        <CustomDatePicker
                             id="paymentDate"
                             value={new Date(formData.paymentDate)}
-                            onChange={(date) => handleDateChange('paymentDate', date)}
+                            onChange={(date: Date[]) => handleDateChange('paymentDate', date)}
                         />
                     </div>
                     

@@ -4,9 +4,11 @@ import ComponentCard from '../../common/ComponentCard';
 import Label from '../Label';
 import Input from '../input/InputField';
 import Select from '../Select';
-import DatePicker from '@/components/form/date-picker';
+import CustomDatePicker from '@/components/form/date-picker';
 import { toast } from 'react-hot-toast';
-import { CreditCard } from 'lucide-react';
+import { CreditCard, Calendar as CalendarIcon } from 'lucide-react';
+import ReactDatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 // Payment type options
 const paymentTypeOptions = [
@@ -232,17 +234,24 @@ export default function RentPaymentForm({ siteId, owners, currentMonthlyRent, ce
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="space-y-1.5">
-                        <Label htmlFor="monthYear" className="text-xs font-bold uppercase tracking-wider text-gray-400">Payment Month*</Label>
-                        <Input
-                            type="text"
-                            id="monthYear"
-                            name="monthYear"
-                            value={formData.monthYear}
-                            onChange={handleInputChange}
-                            placeholder="e.g., JUNE 2025"
-                            required
-                            className="h-10 text-sm"
-                        />
+                        <Label htmlFor="monthYear" className="text-xs font-bold uppercase tracking-wider text-gray-400">Rent Month*</Label>
+                        <div className="relative">
+                            <CalendarIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 z-10" />
+                            <ReactDatePicker
+                                selected={formData.monthYear ? new Date(formData.monthYear + "-01") : null}
+                                onChange={(date) => {
+                                    if (date) {
+                                        const year = date.getFullYear();
+                                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                                        setFormData(prev => ({ ...prev, monthYear: `${year}-${month}` }));
+                                    }
+                                }}
+                                dateFormat="MMMM yyyy"
+                                showMonthYearPicker
+                                placeholderText="Select Month"
+                                className="h-10 w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                            />
+                        </div>
                     </div>
 
                     <div className="space-y-1.5">
@@ -317,10 +326,10 @@ export default function RentPaymentForm({ siteId, owners, currentMonthlyRent, ce
 
                     <div className="space-y-1.5">
                         <Label htmlFor="paymentDate" className="text-xs font-bold uppercase tracking-wider text-gray-400">Date*</Label>
-                        <DatePicker
+                        <CustomDatePicker
                             id="paymentDate"
                             value={new Date(formData.paymentDate)}
-                            onChange={(date) => handleDateChange('paymentDate', date)}
+                            onChange={(date: Date[]) => handleDateChange('paymentDate', date)}
                         />
                     </div>
 

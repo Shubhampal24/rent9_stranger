@@ -20,6 +20,7 @@ export default function DatePicker({
   id,
   mode,
   onChange,
+  value,
   label,
   defaultDate,
   placeholder,
@@ -29,8 +30,12 @@ export default function DatePicker({
       mode: mode || "single",
       monthSelectorType: "static",
       dateFormat: "Y-m-d",
-      defaultDate,
-      onChange,
+      defaultDate: value || defaultDate,
+      onChange: (selectedDates) => {
+        if (onChange) {
+          onChange(selectedDates);
+        }
+      },
     });
 
     return () => {
@@ -38,7 +43,7 @@ export default function DatePicker({
         flatPickr.destroy();
       }
     };
-  }, [mode, onChange, id, defaultDate]);
+  }, [mode, id, defaultDate, value]); // Added value to dependencies
 
   return (
     <div>
@@ -48,11 +53,12 @@ export default function DatePicker({
         <input
           id={id}
           placeholder={placeholder}
+          defaultValue={value ? (value instanceof Date ? value.toISOString().split('T')[0] : String(value)) : ''}
           className="h-10 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-[#121212] dark:text-white/90 dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700  dark:focus:border-brand-800"
         />
 
-        <span className="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400">
-          <CalenderIcon className="size-6" />
+        <span className="absolute text-gray-500 -translate-y-1/2 right-3 top-1/2 dark:text-gray-400 pointer-events-none">
+          <CalenderIcon className="size-5" />
         </span>
       </div>
     </div>

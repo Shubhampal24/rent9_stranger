@@ -27,12 +27,11 @@ export const EcommerceMetrics = () => {
           }
         });
         const data = await res.json();
-        console.log("Dashboard Metrics Response:", data);
         if (data.success) {
           setStats(data.data);
         }
       } catch (error) {
-        console.error("Failed to fetch dashboard stats", error);
+        // Silent error
       } finally {
         setLoading(false);
       }
@@ -56,7 +55,12 @@ export const EcommerceMetrics = () => {
     gradient: string;
     iconBg: string;
   }) => (
-    <div className="group relative overflow-hidden rounded-2xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 dark:bg-[#121212]/50 dark:border-gray-800/70">
+    <div className={`group relative overflow-hidden rounded-2xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 dark:bg-[#121212]/50 dark:border-gray-800/70 ${
+      title === "Total Sites" ? "hover:border-blue-500/50" : 
+      title === "Total Revenue" ? "hover:border-emerald-500/50" : 
+      title === "Pending Payments" ? "hover:border-amber-500/50" : 
+      "hover:border-purple-500/50"
+    }`}>
       {/* Gradient overlay */}
       <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300 ${gradient}`} />
 
@@ -117,7 +121,7 @@ export const EcommerceMetrics = () => {
             icon={IndianRupee}
             title="Total Revenue"
             value={`₹${(stats?.transactions?.totalAmount ?? 0).toLocaleString()}`}
-            description={`Collected: ₹${(stats?.transactions?.paidAmount ?? 0).toLocaleString()}`}
+            description={`Paid: ₹${(stats?.transactions?.paidAmount ?? 0).toLocaleString()}`}
             gradient="bg-gradient-to-br from-emerald-500 to-emerald-600"
             iconBg="bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/25 shadow-lg"
           />
@@ -149,7 +153,7 @@ export const EcommerceMetrics = () => {
       {/* Category Wise Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Rent Card */}
-        <div className="p-4 rounded-2xl bg-white border border-gray-100 dark:bg-[#121212]/50 dark:border-gray-800/70">
+        <div className="p-4 rounded-2xl bg-white border border-gray-100 hover:border-blue-500/50 transition-all duration-300 dark:bg-[#121212]/50 dark:border-gray-800/70">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
@@ -163,7 +167,7 @@ export const EcommerceMetrics = () => {
           </div>
           <div className="space-y-3">
             <div className="flex justify-between text-xs">
-              <span className="text-gray-500">Collected</span>
+              <span className="text-gray-500">Paid</span>
               <span className="font-semibold text-emerald-600">₹{(stats?.rent?.paidAmount ?? 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-xs">
@@ -180,7 +184,7 @@ export const EcommerceMetrics = () => {
         </div>
 
         {/* Electricity Card */}
-        <div className="p-4 rounded-2xl bg-white border border-gray-100 dark:bg-[#121212]/50 dark:border-gray-800/70">
+        <div className="p-4 rounded-2xl bg-white border border-gray-100 hover:border-amber-500/50 transition-all duration-300 dark:bg-[#121212]/50 dark:border-gray-800/70">
           <div className="flex justify-between items-center mb-4">
              <div className="flex items-center gap-2">
               <div className="p-1.5 bg-amber-50 dark:bg-amber-900/30 rounded-lg">
@@ -194,7 +198,7 @@ export const EcommerceMetrics = () => {
           </div>
           <div className="space-y-3">
             <div className="flex justify-between text-xs">
-              <span className="text-gray-500">Collected</span>
+              <span className="text-gray-500">Paid</span>
               <span className="font-semibold text-emerald-600">₹{(stats?.electricity?.paidAmount ?? 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-xs">
@@ -211,7 +215,7 @@ export const EcommerceMetrics = () => {
         </div>
 
         {/* Maintenance Card */}
-        <div className="p-4 rounded-2xl bg-white border border-gray-100 dark:bg-[#121212]/50 dark:border-gray-800/70">
+        <div className="p-4 rounded-2xl bg-white border border-gray-100 hover:border-purple-500/50 transition-all duration-300 dark:bg-[#121212]/50 dark:border-gray-800/70">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
@@ -225,7 +229,7 @@ export const EcommerceMetrics = () => {
           </div>
           <div className="space-y-3">
             <div className="flex justify-between text-xs">
-              <span className="text-gray-500">Collected</span>
+              <span className="text-gray-500">Paid</span>
               <span className="font-semibold text-emerald-600">₹{(stats?.maintenance?.paidAmount ?? 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-xs">

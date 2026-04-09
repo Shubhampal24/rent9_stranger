@@ -58,7 +58,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
               <option
                 key={country.code}
                 value={country.code}
-                className="text-gray-700 dark:bg-[#121212] dark:text-gray-400"
+                className="text-gray-700 bg-white dark:bg-gray-900 dark:text-gray-400"
               >
                 {country.code}
               </option>
@@ -108,7 +108,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
               <option
                 key={country.code}
                 value={country.code}
-                className="text-gray-700 dark:bg-[#121212] dark:text-gray-400"
+                className="text-gray-700 bg-white dark:bg-gray-900 dark:text-gray-400"
               >
                 {country.code}
               </option>

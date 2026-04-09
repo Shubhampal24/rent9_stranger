@@ -224,10 +224,7 @@ const Page = () => {
         /* ─── SEARCH VIEW ─────────────────────────────────────────── */
         <div className="">
           {/* Header */}
-          <div className="">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Rent Payment</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Search and select a site to record rent payment</p>
-          </div>
+          {/* Header removed as per user request */}
 
           {/* Search & Filter Bar */}
           <div className="flex gap-2 mb-3">
@@ -444,13 +441,13 @@ const Page = () => {
                 {/* Payment Form */}
                 <RentPaymentForm
                   siteId={String(selectedSite._id || selectedSite.id)}
+                  centreId={siteDetails.centreId?._id || siteDetails.centreId}
                   owners={(siteDetails.owners || siteDetails.ownerId || []).map((owner: any) => ({
                     id: owner.ownerId?._id || owner._id || owner.id,
                     owner_name: owner.ownerId?.ownerName || owner.ownerName || owner.owner_name,
                     owner_monthly_rent: Number(owner.ownerMonthlyRent || owner.owner_monthly_rent) || 0
                   }))}
                   currentMonthlyRent={Number(siteDetails.monthlyRent || siteDetails.monthly_rent) || 0}
-                  centreId={siteDetails.centreId?._id || siteDetails.centreId}
                 />
 
                 {/* Active Participants */}

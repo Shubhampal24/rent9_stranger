@@ -160,7 +160,7 @@ export default function BasicTableOne() {
               <div className="max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700">
                 <Table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   {/* Fixed Header */}
-                  <TableHeader className="sticky top-0 z-10 bg-white dark:bg-[#121212] border-b border-gray-200 dark:border-gray-700">
+                  <TableHeader className="sticky top-0 z-10 bg-white dark:bg-[#13141a] border-b border-gray-200 dark:border-gray-700">
                     <TableRow>
                       {[
                         { width: "w-16", label: "Sr No." },
@@ -173,7 +173,7 @@ export default function BasicTableOne() {
                       ].map(({ width, label }) => (
                         <TableCell
                           key={label}
-                          className={`${width} px-6 py-4 font-semibold text-gray-900 dark:text-white whitespace-nowrap bg-gray-50 dark:bg-[#4f46e5]`}
+                          className={`${width} px-6 py-4 font-semibold text-gray-900 dark:text-white whitespace-nowrap bg-gray-50 dark:bg-brand-500`}
                         >
                           {label}
                         </TableCell>

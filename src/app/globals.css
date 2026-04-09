@@ -38,18 +38,18 @@
   --color-white: #ffffff;
   --color-black: #101828;
 
-  --color-brand-25: #f2f7ff;
-  --color-brand-50: #ecf3ff;
-  --color-brand-100: #dde9ff;
-  --color-brand-200: #c2d6ff;
-  --color-brand-300: #9cb9ff;
-  --color-brand-400: #7592ff;
-  --color-brand-500: #465fff;
-  --color-brand-600: #3641f5;
-  --color-brand-700: #2a31d8;
-  --color-brand-800: #252dae;
-  --color-brand-900: #262e89;
-  --color-brand-950: #161950;
+  --color-brand-25: #faf5ff;
+  --color-brand-50: #f3e8ff;
+  --color-brand-100: #e9d5ff;
+  --color-brand-200: #d8b4fe;
+  --color-brand-300: #c084fc;
+  --color-brand-400: #a78bfa;
+  --color-brand-500: #8b5cf6;
+  --color-brand-600: #7c3aed;
+  --color-brand-700: #6d28d9;
+  --color-brand-800: #5b21b6;
+  --color-brand-900: #4c1d95;
+  --color-brand-950: #2e1065;
 
   --color-blue-light-25: #f5fbff;
   --color-blue-light-50: #f0f9ff;
@@ -71,12 +71,12 @@
   --color-gray-300: #d0d5dd;
   --color-gray-400: #98a2b3;
   --color-gray-500: #667085;
-  --color-gray-600: #475467;
-  --color-gray-700: #344054;
-  --color-gray-800: #1d2939;
-  --color-gray-900: #101828;
-  --color-gray-950: #0c111d;
-  --color-gray-dark: #1a2231;
+  --color-gray-600: #4b4b62;
+  --color-gray-700: #3f3f5a;
+  --color-gray-800: #292938;
+  --color-gray-900: #1b1b26;
+  --color-gray-950: #13141a;
+  --color-gray-dark: #13141a;
 
   --color-orange-25: #fffaf5;
   --color-orange-50: #fff6ed;
@@ -346,7 +346,16 @@
 }
 
 .flatpickr-calendar {
-  @apply mt-2 bg-white! rounded-xl! p-5! border! border-gray-200! text-gray-500! dark:bg-gray-dark! dark:text-gray-400! dark:shadow-theme-xl! 2xsm:w-auto!;
+  @apply mt-2 bg-white! rounded-xl! p-3! border! border-gray-200! text-gray-500! dark:bg-gray-dark! dark:text-gray-400! dark:shadow-theme-xl!;
+  width: 280px !important; /* Smaller fixed width */
+}
+
+@media (max-width: 480px) {
+  .flatpickr-calendar {
+    width: 260px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
 }
 
 .flatpickr-months .flatpickr-prev-month:hover svg,
@@ -365,7 +374,7 @@
 
 .flatpickr-current-month .cur-month,
 .flatpickr-current-month input.cur-year {
-  @apply h-auto! pt-0! text-lg! font-medium! text-gray-800! dark:text-white/90!;
+  @apply h-auto! pt-0! text-sm! font-bold! text-gray-800! dark:text-white/90!;
 }
 
 .flatpickr-prev-month,
@@ -374,20 +383,24 @@
 }
 
 .flatpickr-weekdays {
-  @apply h-auto mt-6 mb-4 bg-transparent!;
+  @apply h-auto mt-4 mb-2 bg-transparent!;
 }
 
 .flatpickr-weekday {
-  @apply text-theme-sm! font-medium! text-gray-500! dark:text-gray-400! bg-transparent!;
+  @apply text-[10px]! font-bold! text-gray-400! dark:text-gray-500! bg-transparent! uppercase tracking-wider!;
 }
 
 .flatpickr-day {
-  @apply flex! items-center! text-theme-sm! font-medium! text-gray-800! dark:text-white/90! dark:hover:border-gray-300! dark:hover:bg-gray-900!;
+  @apply flex! items-center! justify-center! text-xs! font-medium! text-gray-800! dark:text-white/90! dark:hover:border-gray-700! dark:hover:bg-gray-800! rounded-lg!;
+  height: 32px !important;
+  line-height: 32px !important;
+  max-width: 32px !important;
+  margin: 2px !important;
 }
 
 .flatpickr-day.nextMonthDay,
 .flatpickr-day.prevMonthDay {
-  @apply text-gray-400!;
+  @apply text-gray-300! dark:text-gray-700!;
 }
 
 .flatpickr-months>.flatpickr-month {
@@ -398,7 +411,7 @@
   background: none!important;
   appearance: none;
   background-image: none!important;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .flatpickr-month .flatpickr-current-month .flatpickr-monthDropdown-months:focus {
@@ -408,17 +421,17 @@
 
 .flatpickr-months .flatpickr-prev-month,
 .flatpickr-months .flatpickr-next-month {
-  @apply top-7! dark:fill-white! dark:text-white! bg-transparent!;
+  @apply top-4! dark:fill-white! dark:text-white! bg-transparent!;
 }
 
 .flatpickr-months .flatpickr-prev-month.flatpickr-prev-month,
 .flatpickr-months .flatpickr-next-month.flatpickr-prev-month {
-  @apply left-7!;
+  @apply left-4!;
 }
 
 .flatpickr-months .flatpickr-prev-month.flatpickr-next-month,
 .flatpickr-months .flatpickr-next-month.flatpickr-next-month {
-  @apply right-7!;
+  @apply right-4!;
 }
 
 .flatpickr-days {
@@ -460,13 +473,6 @@ span.flatpickr-weekday,
 
 .flatpickr-day.selected,
 .flatpickr-day.startRange,
-.flatpickr-day.selected,
-.flatpickr-day.endRange {
-  @apply text-white! dark:text-white!;
-}
-
-.flatpickr-day.selected,
-.flatpickr-day.startRange,
 .flatpickr-day.endRange,
 .flatpickr-day.selected.inRange,
 .flatpickr-day.startRange.inRange,
@@ -483,14 +489,93 @@ span.flatpickr-weekday,
 .flatpickr-day.selected.nextMonthDay,
 .flatpickr-day.startRange.nextMonthDay,
 .flatpickr-day.endRange.nextMonthDay {
-  background: #465fff;
-  @apply border-brand-500! bg-brand-500! hover:border-brand-500! hover:bg-brand-500!;
+  background: #8b5cf6 !important;
+  @apply border-brand-500! bg-brand-500! hover:border-brand-500! hover:bg-brand-500! text-white!;
+}
+
+/* React DatePicker overrides to match */
+.react-datepicker {
+  @apply border-none! bg-white! dark:bg-gray-dark! rounded-xl! shadow-theme-xl! font-outfit!;
+  width: 280px !important;
+}
+
+.react-datepicker__header {
+  @apply bg-transparent! border-none! p-4!;
+}
+
+.react-datepicker__current-month {
+  @apply text-sm! font-bold! text-gray-800! dark:text-white/90!;
+}
+
+.react-datepicker__day-name {
+  @apply text-[10px]! font-bold! text-gray-400! uppercase tracking-wider! m-1!;
+  width: 32px !important;
+}
+
+.react-datepicker__day {
+  @apply text-xs! font-medium! text-gray-800! dark:text-white/90! rounded-lg! m-1!;
+  width: 32px !important;
+  line-height: 32px !important;
+}
+
+.react-datepicker__day:hover {
+  @apply bg-gray-50! dark:bg-white/5!;
+}
+
+.react-datepicker__day--selected {
+  @apply bg-brand-500! text-white! hover:bg-brand-600!;
+}
+
+.react-datepicker__day--keyboard-selected {
+  @apply bg-brand-50! text-brand-500! dark:bg-white/10!;
+}
+
+/* Month picker dark mode fixes */
+.dark .react-datepicker__month-text,
+.dark .react-datepicker__month-year-text {
+  @apply text-white/90!;
+}
+
+.dark .react-datepicker__month--selected,
+.dark .react-datepicker__month--selected:hover,
+.dark .react-datepicker__month--active,
+.dark .react-datepicker__month-text--keyboard-selected {
+  @apply bg-brand-500! text-white!;
+}
+
+.dark .react-datepicker__month-text:hover {
+  @apply bg-white/10!;
+}
+
+.dark .react-datepicker__month-text--selected {
+  @apply bg-brand-500! text-white!;
+}
+
+.dark .react-datepicker__header,
+.dark .react-datepicker__header__dropdown,
+.dark .react-datepicker__current-month,
+.dark .react-datepicker-year-header {
+  @apply bg-transparent! text-white/90!;
+}
+
+.dark .react-datepicker__navigation--next,
+.dark .react-datepicker__navigation--previous {
+  @apply brightness-200;
+}
+
+.dark .react-datepicker__month-container {
+  @apply bg-transparent!;
+}
+
+.dark .react-datepicker__navigation--next--with-month-year-picker,
+.dark .react-datepicker__navigation--previous--with-month-year-picker {
+  @apply brightness-200;
 }
 
 .flatpickr-day.selected.startRange+.endRange:not(:nth-child(7n + 1)),
 .flatpickr-day.startRange.startRange+.endRange:not(:nth-child(7n + 1)),
 .flatpickr-day.endRange.startRange+.endRange:not(:nth-child(7n + 1)) {
-  box-shadow: -10px 0 0 #465fff;
+  box-shadow: -10px 0 0 #8b5cf6;
 }
 
 .flatpickr-months .flatpickr-prev-month svg,

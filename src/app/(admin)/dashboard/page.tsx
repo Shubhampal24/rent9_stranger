@@ -37,11 +37,11 @@ export default function EcommerceClient() {
 
       {/* ── Bottom section: Upcoming Rent's (full width) ── */}
       <div className="min-w-0">
-        <h2 className="text-base font-semibold mb-4 text-gray-800 dark:text-white/90 px-1">
+        {/* <h2 className="text-base font-semibold mb-4 text-gray-800 dark:text-white/90 px-1">
           Upcoming Rent&apos;s Detail
-        </h2>
+        </h2> */}
         <RecentOrders />
       </div>
     </div>
   );
-}
+}

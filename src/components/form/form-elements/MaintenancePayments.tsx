@@ -10,14 +10,17 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import Button from "@/components/ui/button/Button";
+import ReactDatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 interface MaintenancePaymentFormProps {
     siteId: string;
     owners?: any[];
     currentMonthlyRent?: number;
+    centreId?: string;
 }
 
-export default function MaintenancePaymentForm({ siteId, owners = [], currentMonthlyRent = 0 }: MaintenancePaymentFormProps) {
+export default function MaintenancePaymentForm({ siteId, owners = [], currentMonthlyRent = 0, centreId }: MaintenancePaymentFormProps) {
     const [formData, setFormData] = useState({
         siteId: siteId,
         monthYear: "",
@@ -27,6 +30,7 @@ export default function MaintenancePaymentForm({ siteId, owners = [], currentMon
         paymentType: "Online",
         utrNumber: "",
         maintenanceDescription: "",
+        centreId: typeof centreId === 'object' ? (centreId as any)._id : (centreId || ""),
     });
     const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -49,7 +53,7 @@ export default function MaintenancePaymentForm({ siteId, owners = [], currentMon
     };
 
     const validateForm = () => {
-        const required = ["monthYear", "paymentAmount", "paidStatus", "maintenanceDescription"];
+        const required = ["monthYear", "paymentAmount", "paidStatus"];
         const missing = required.filter(f => !formData[f as keyof typeof formData]);
         if (missing.length > 0) {
             toast.error(`Please provide: ${missing.join(", ")}`);
@@ -139,15 +143,20 @@ export default function MaintenancePaymentForm({ siteId, owners = [], currentMon
                         <div className="space-y-1.5">
                             <Label htmlFor="monthYear" className="text-xs font-bold uppercase tracking-wider text-gray-400">Billing Month*</Label>
                             <div className="relative">
-                                <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500" />
-                                <Input
-                                    type="text"
-                                    id="monthYear"
-                                    name="monthYear"
-                                    value={formData.monthYear}
-                                    onChange={handleInputChange}
-                                    placeholder="e.g., April 2024"
-                                    className="h-11 pl-9 text-sm font-semibold border-gray-100 dark:border-white/[0.05] bg-gray-50/50 focus:bg-white transition-all rounded-xl"
+                                <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500 z-10" />
+                                <ReactDatePicker
+                                    selected={formData.monthYear ? new Date(formData.monthYear + "-01") : null}
+                                    onChange={(date) => {
+                                        if (date) {
+                                            const year = date.getFullYear();
+                                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                                            setFormData(prev => ({ ...prev, monthYear: `${year}-${month}` }));
+                                        }
+                                    }}
+                                    dateFormat="MMMM yyyy"
+                                    showMonthYearPicker
+                                    placeholderText="Select Month"
+                                    className="h-11 w-full pl-9 pr-3 py-2.5 text-sm font-semibold border-gray-100 dark:border-white/[0.05] bg-gray-50/50 focus:bg-white transition-all rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-white"
                                 />
                             </div>
                         </div>

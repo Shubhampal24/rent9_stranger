@@ -14,8 +14,8 @@ import {
 import Badge from "../ui/badge/Badge";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { Upload, X, Trash2, Search, Filter, Download, Eye } from "lucide-react";
-
+import { Download, Eye, X, Edit, Trash2, Upload, Calendar as CalendarIcon } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 const SiteOwnerCell = ({ siteId }: { siteId?: string }) => {
     const [ownerName, setOwnerName] = React.useState<string>("...");
@@ -292,6 +292,21 @@ export default function ElectricityTransactionsTable() {
         }).format(amount);
     };
 
+    const normalizeMonthYear = (val: string) => {
+        if (!val) return "";
+        if (/^\d{4}-\d{2}$/.test(val)) return val;
+
+        const months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+        const parts = val.trim().toLowerCase().split(/\s+/);
+        if (parts.length === 2) {
+            let mIdx = months.indexOf(parts[0]);
+            if (mIdx === -1) mIdx = months.findIndex(m => m.startsWith(parts[0].substring(0, 3)));
+            const year = parseInt(parts[1]);
+            if (mIdx !== -1 && !isNaN(year)) return `${year}-${String(mIdx + 1).padStart(2, '0')}`;
+        }
+        return val;
+    };
+
     const handleUpdateClick = async (transaction: ElectricityTransaction) => {
         console.log("Opening update modal for transaction:", transaction);
         setSelectedTransaction(transaction);
@@ -309,7 +324,7 @@ export default function ElectricityTransactionsTable() {
             utrNumber: transaction.utrNumber || "",
             units: transaction.units?.toString() || "",
             electricityCharges: transaction.electricityCharges?.toString() || "",
-            monthYear: transaction.monthYear || "",
+            monthYear: normalizeMonthYear(transaction.monthYear || ""),
             paymentType: transaction.paymentType || "Online",
             electricityConsumerId: currentConsumerId
         });
@@ -407,7 +422,8 @@ export default function ElectricityTransactionsTable() {
 
                 // For other fields, send if they are not undefined/null (allow empty strings to clear fields)
                 if (value !== undefined && value !== null) {
-                    formData.append(key, value as string);
+                    const finalVal = key === "monthYear" ? normalizeMonthYear(value as string) : value;
+                    formData.append(key, finalVal as string);
                 }
             });
 
@@ -417,11 +433,11 @@ export default function ElectricityTransactionsTable() {
                 formData.append("removeImage", "true");
             }
 
-            // DEBUG LOG PAYLOAD
-            console.log("Submitting Electricity Update Payload:");
-            const payloadObject: any = {};
-            formData.forEach((val, key) => { payloadObject[key] = val; });
-            console.log(payloadObject);
+            // ✅ DEBUG LOG PAYLOAD
+            console.log("🚀 [Electricity Transaction] Submitting Update Payload:");
+            for (let [key, value] of (formData as any).entries()) {
+                console.log(`${key}:`, value instanceof File ? `File: ${value.name}` : value);
+            }
 
             const id = selectedTransaction._id || selectedTransaction.id;
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rent/siteTransaction/${id}`, {
@@ -550,70 +566,73 @@ export default function ElectricityTransactionsTable() {
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 px-4 sticky top-0 z-20 py-4 bg-white dark:bg-[#121212] border-b border-gray-200 dark:border-gray-700">
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap">
-                    Showing <span className="font-semibold text-gray-900 dark:text-gray-100">{filteredTransactions.length}</span> of <span className="font-semibold text-gray-900 dark:text-gray-100">{totalCount}</span> transactions
-                </p>
+      <div className="flex items-center justify-between gap-2 px-3 sticky top-0 z-20 py-2 border-b border-gray-200 dark:border-gray-700">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Showing {filteredTransactions.length} of {totalCount} transactions
+        </p>
 
-                <div className="flex flex-wrap items-center gap-3">
-                    <input
-                        type="text"
-                        placeholder="Search..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full sm:w-48 px-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white transition-shadow shadow-sm"
-                    />
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-40 px-2 py-1.5 text-sm rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-white/[0.05] dark:border-white/[0.1] dark:text-white"
+          />
 
-                    <select
-                        value={filters.paid_status || ""}
-                        onChange={(e) => handleFilterChange("paid_status", e.target.value)}
-                        className="w-full sm:w-auto min-w-[120px] px-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white [&>option]:dark:text-black transition-shadow shadow-sm"
-                    >
-                        <option value="">All Status</option>
-                        <option value="paid">Paid</option>
-                        <option value="pending">Pending</option>
-                        <option value="partial">Partial</option>
-                    </select>
+          <select
+            value={filters.paid_status || ""}
+            onChange={(e) => handleFilterChange("paid_status", e.target.value)}
+            className="w-32 px-2 py-1 text-sm rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:border-white/[0.1] dark:text-white"
+          >
+            <option value="" className="dark:bg-gray-900">All Status</option>
+            <option value="paid" className="dark:bg-gray-900">Paid</option>
+            <option value="pending" className="dark:bg-gray-900">Pending</option>
+            <option value="partial" className="dark:bg-gray-900">Partial</option>
+          </select>
 
+          <div className="relative">
+            <DatePicker
+              selected={filters.start_date ? new Date(filters.start_date) : null}
+              onChange={(date: Date | null) =>
+                handleFilterChange("start_date", date ? date.toLocaleDateString("en-CA") : "")
+              }
+              dateFormat="yyyy-MM-dd"
+              placeholderText="Start Date"
+              className="w-32 px-2 py-1.5 pl-8 text-sm rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-white/[0.05] dark:border-white/[0.1] dark:text-white"
+            />
+            <CalendarIcon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          </div>
 
+          <div className="relative">
+            <DatePicker
+              selected={filters.end_date ? new Date(filters.end_date) : null}
+              onChange={(date: Date | null) =>
+                handleFilterChange("end_date", date ? date.toLocaleDateString("en-CA") : "")
+              }
+              dateFormat="yyyy-MM-dd"
+              placeholderText="End Date"
+              className="w-32 px-2 py-1.5 pl-8 text-sm rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-white/[0.05] dark:border-white/[0.1] dark:text-white"
+            />
+            <CalendarIcon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          </div>
 
-                    <DatePicker
-                        selected={filters.start_date ? new Date(filters.start_date) : null}
-                        onChange={(date: Date | null) =>
-                            handleFilterChange("start_date", date ? date.toLocaleDateString("en-CA") : "")
-                        }
-                        dateFormat="yyyy-MM-dd"
-                        placeholderText="Start Date"
-                        className="w-full sm:w-32 px-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white transition-shadow shadow-sm font-medium"
-                    />
+          {(searchTerm !== "" || Object.values(filters).some(v => !!v)) && (
+            <button
+              onClick={() => { setFilters({}); setSearchTerm(""); }}
+              className="px-2 py-1.5 text-sm bg-gray-200 hover:bg-gray-300 rounded dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
+            >
+              Clear
+            </button>
+          )}
 
-                    <DatePicker
-                        selected={filters.end_date ? new Date(filters.end_date) : null}
-                        onChange={(date: Date | null) =>
-                            handleFilterChange("end_date", date ? date.toLocaleDateString("en-CA") : "")
-                        }
-                        dateFormat="yyyy-MM-dd"
-                        placeholderText="End Date"
-                        className="w-full sm:w-32 px-3 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white transition-shadow shadow-sm font-medium"
-                    />
-
-                    {(searchTerm !== "" || Object.values(filters).some(v => !!v)) && (
-                        <button
-                            onClick={() => { setFilters({}); setSearchTerm(""); }}
-                            className="w-full sm:w-auto flex justify-center px-4 py-2 text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors shadow-sm"
-                        >
-                            Clear
-                        </button>
-                    )}
-
-                    <button
-                        onClick={handleDownload}
-                        className="w-full sm:w-auto flex items-center justify-center px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-shadow shadow-sm whitespace-nowrap"
-                        title="Download Excel Ledger"
-                    >
-                        📥 Ledger (EXCEL)
-                    </button>
-                </div>
+          <button
+            onClick={handleDownload}
+            className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+          >
+            📥 Download Excel
+          </button>
+        </div>
             </div>
 
             <div className="relative rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
@@ -622,26 +641,26 @@ export default function ElectricityTransactionsTable() {
                         <div className="overflow-hidden">
                             <div className="max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700">
                                 <Table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                    <TableHeader className="sticky top-0 z-10 bg-white dark:bg-[#121212] border-b border-gray-200 dark:border-gray-700">
+                                    <TableHeader className="sticky top-0 z-10 bg-white dark:bg-[#13141a] border-b border-gray-200 dark:border-gray-700">
                                         <TableRow>
                                             {[
-                                                { width: "w-32", label: "Site Code" },
-                                                { width: "w-40", label: "Site Name" },
-                                                { width: "w-32", label: "Owner Name" },
+                                                { width: "w-16", label: "Site Code" },
+                                                { width: "w-24", label: "Site Name" },
+                                                { width: "w-20", label: "Owner Name" },
                                                 { width: "w-40", label: "Unit" },
                                                 { width: "w-32", label: "Bill Amount" },
                                                 { width: "w-32", label: "Payment Date" },
                                                 { width: "w-32", label: "Bill Period" },
                                                 { width: "w-32", label: "Electricity Charges" },
-                                                { width: "w-24", label: "Status" },
+                                                { width: "w-10", label: "Status" },
                                                 { width: "w-32", label: "Consumer Number" },
-                                                { width: "w-32", label: "UTR Number" },
-                                                { width: "w-34", label: "Image" },
+                                                { width: "w-24", label: "UTR Number" },
+                                                { width: "w-24", label: "Image" },
                                                 { width: "w-28", label: "Actions" }
                                             ].map(({ width, label }) => (
                                                 <TableCell
                                                     key={label}
-                                                    className={`${width} px-6 py-4 font-semibold text-gray-900 dark:text-white whitespace-nowrap bg-gray-50 dark:bg-[#4f46e5]`}
+                                                    className={`${width} px-6 py-4 font-semibold text-gray-900 dark:text-white whitespace-nowrap bg-gray-50 dark:bg-brand-500`}
                                                 >
                                                     {label}
                                                 </TableCell>
@@ -655,13 +674,13 @@ export default function ElectricityTransactionsTable() {
                                                 key={item.transactionId || item.id}
                                                 className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                                             >
-                                                <TableCell className="w-32 px-6 py-4 text-gray-900 dark:text-gray-100">{item.siteId?.code || '-'}</TableCell>
-                                                <TableCell className="w-40 px-6 py-4 text-gray-900 dark:text-gray-100">{item.siteId?.siteName || '-'}</TableCell>
+                                                <TableCell className="w-16 px-6 py-4 text-gray-900 dark:text-gray-100">{item.siteId?.code || '-'}</TableCell>
+                                                <TableCell className="w-24 px-6 py-4 text-gray-900 dark:text-gray-100">{item.siteId?.siteName || '-'}</TableCell>
                                                 <TableCell className="w-32 px-6 py-4 text-gray-900 dark:text-gray-100 font-medium">
                                                     {item.ownerName || "..."}
                                                 </TableCell>
                                                 <TableCell className="w-40 px-6 py-4 text-gray-900 dark:text-gray-100">{item.units || '-'}</TableCell>
-                                                <TableCell className="w-32 px-6 py-4 text-gray-900 dark:text-gray-100 font-medium">
+                                                <TableCell className="w-20 px-6 py-4 text-gray-900 dark:text-gray-100 font-medium">
                                                     {formatCurrency(Number(item.paymentAmount) || 0)}
                                                 </TableCell>
                                                 <TableCell className="w-32 px-6 py-4 text-gray-900 dark:text-gray-100">
@@ -673,7 +692,7 @@ export default function ElectricityTransactionsTable() {
                                                 <TableCell className="w-32 px-6 py-4 text-gray-900 dark:text-gray-100">
                                                     {item.electricityCharges || '-'}
                                                 </TableCell>
-                                                <TableCell className="w-24 px-6 py-4 text-gray-900 dark:text-gray-100">
+                                                <TableCell className="w-10 px-6 py-4 text-gray-900 dark:text-gray-100">
                                                     <Badge
                                                         size="sm"
                                                         color={
@@ -688,7 +707,7 @@ export default function ElectricityTransactionsTable() {
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="w-32 px-6 py-4 text-gray-900 dark:text-gray-100">{item.electricityConsumerNo || '-'}</TableCell>
-                                                <TableCell className="w-32 px-6 py-4 text-gray-900 dark:text-gray-100 font-mono text-xs">
+                                                <TableCell className="w-24 px-6 py-4 text-gray-900 dark:text-gray-100 font-mono text-xs">
                                                     {item.utrNumber || (item as any).utr_number || '-'}
                                                 </TableCell>
                                                 <TableCell className="w-24 px-6 py-4 text-gray-900 dark:text-gray-100">
@@ -733,7 +752,7 @@ export default function ElectricityTransactionsTable() {
                 {/* Proof Viewer */}
                 {viewProofTransaction && viewProofTransaction.image && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                        <div className="bg-white dark:bg-[#121212] rounded-lg p-4 shadow-lg relative max-w-lg w-full">
+                        <div className="bg-white dark:bg-[#13141a] rounded-lg p-4 shadow-lg relative max-w-lg w-full">
                             <button
                                 className="absolute top-4 right-4 text-3xl text-gray-500 hover:text-red-500 z-10"
                                 onClick={() => setViewProofTransaction(null)}
@@ -760,10 +779,10 @@ export default function ElectricityTransactionsTable() {
                                 </div>
                                 <div className="flex-1">
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
-                                    <select value={updateFormData.paidStatus} onChange={(e) => setUpdateFormData({ ...updateFormData, paidStatus: e.target.value })} className={`w-full px-3 py-2 border ${formErrors.paidStatus ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md dark:bg-gray-700 dark:text-white`}>
-                                        <option value="paid">Paid</option>
-                                        <option value="pending">Pending</option>
-                                        <option value="partial">Partial</option>
+                                    <select value={updateFormData.paidStatus} onChange={(e) => setUpdateFormData({ ...updateFormData, paidStatus: e.target.value })} className={`w-full px-3 py-2 border ${formErrors.paidStatus ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-gray-800 dark:text-white`}>
+                                        <option value="paid" className="dark:bg-gray-950">Paid</option>
+                                        <option value="pending" className="dark:bg-gray-950">Pending</option>
+                                        <option value="partial" className="dark:bg-gray-950">Partial</option>
                                     </select>
                                     {formErrors.paidStatus && <p className="text-red-500 text-xs mt-1">{formErrors.paidStatus}</p>}
                                 </div>
@@ -783,11 +802,15 @@ export default function ElectricityTransactionsTable() {
                             <div className="flex space-x-4">
                                 <div className="flex-1">
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payment Date</label>
-                                    <input type="date" value={updateFormData.paymentDate} onChange={(e) => setUpdateFormData({ ...updateFormData, paymentDate: e.target.value })} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white" />
-                                </div>
-                                <div className="flex-1">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Month / Year</label>
-                                    <input type="text" value={updateFormData.monthYear} onChange={(e) => setUpdateFormData({ ...updateFormData, monthYear: e.target.value })} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white" placeholder="e.g. Mar-2026" />
+                                    <div className="relative">
+                                        <input
+                                            type="date"
+                                            value={updateFormData.paymentDate}
+                                            onChange={(e) => setUpdateFormData({ ...updateFormData, paymentDate: e.target.value })}
+                                            className="w-full px-3 py-2 pl-9 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+                                        />
+                                        <CalendarIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                    </div>
                                 </div>
                             </div>
 
@@ -797,12 +820,12 @@ export default function ElectricityTransactionsTable() {
                                     <select
                                         value={updateFormData.paymentType}
                                         onChange={(e) => setUpdateFormData({ ...updateFormData, paymentType: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white text-sm"
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 dark:text-white text-sm"
                                     >
-                                        <option value="Online">Online</option>
-                                        <option value="Cash">Cash</option>
-                                        <option value="Cheque">Cheque</option>
-                                        <option value="Other">Other</option>
+                                        <option value="Online" className="dark:bg-gray-950">Online</option>
+                                        <option value="Cash" className="dark:bg-gray-950">Cash</option>
+                                        <option value="Cheque" className="dark:bg-gray-950">Cheque</option>
+                                        <option value="Other" className="dark:bg-gray-950">Other</option>
                                     </select>
                                 </div>
                                 <div>

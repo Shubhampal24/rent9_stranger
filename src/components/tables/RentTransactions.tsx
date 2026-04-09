@@ -15,6 +15,8 @@ import {
 import Badge from "../ui/badge/Badge";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { Download, Eye, X, Edit, Trash2, Upload, Calendar as CalendarIcon } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 interface RentTransaction {
   id: string;
@@ -249,6 +251,21 @@ export default function RentTransactionsTable() {
     return date.toISOString().split("T")[0];
   };
 
+  const normalizeMonthYear = (val: string) => {
+    if (!val) return "";
+    if (/^\d{4}-\d{2}$/.test(val)) return val;
+
+    const months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+    const parts = val.trim().toLowerCase().split(/\s+/);
+    if (parts.length === 2) {
+      let mIdx = months.indexOf(parts[0]);
+      if (mIdx === -1) mIdx = months.findIndex(m => m.startsWith(parts[0].substring(0, 3)));
+      const year = parseInt(parts[1]);
+      if (mIdx !== -1 && !isNaN(year)) return `${year}-${String(mIdx + 1).padStart(2, '0')}`;
+    }
+    return val;
+  };
+
   const handleUpdateClick = (transaction: RentTransaction) => {
     setSelectedTransaction(transaction);
     setUpdateFormData({
@@ -258,7 +275,7 @@ export default function RentTransactionsTable() {
       paymentDate: formatDateForInput(transaction.paymentDate),
       paymentAmount: transaction.paymentAmount?.toString() || "",
       utrNumber: transaction.utrNumber || "",
-      monthYear: transaction.monthYear || "",
+      monthYear: normalizeMonthYear(transaction.monthYear || ""),
       ownerName: transaction.ownerName || "",
     });
     setNewImageFile(null);
@@ -318,14 +335,14 @@ export default function RentTransactionsTable() {
 
       const formData = new FormData();
 
-      formData.append("paymentAmount", String(Number(updateFormData.paymentAmount) || 0));
+      formData.append("monthlyRent", String(Number(updateFormData.monthlyRent) || 0));
       formData.append("paidStatus", updateFormData.paidStatus);
       formData.append("paymentType", updateFormData.paymentType);
       formData.append("utrNumber", updateFormData.utrNumber);
       formData.append("paymentDate", updateFormData.paymentDate);
       formData.append("monthlyRent", String(Number(updateFormData.monthlyRent) || 0));
       formData.append("ownerName", updateFormData.ownerName);
-      formData.append("monthYear", updateFormData.monthYear);
+      formData.append("monthYear", normalizeMonthYear(updateFormData.monthYear));
 
       // ✅ send image if selected
       if (newImageFile) {
@@ -337,7 +354,10 @@ export default function RentTransactionsTable() {
         formData.append("removeImage", "true");
       }
 
-      console.log("Updating via JSON to:", endpoint, formData);
+      console.log("🚀 [Rent Transaction] Submitting Update Payload:");
+      for (const [key, value] of (formData as any).entries()) {
+          console.log(`${key}:`, value instanceof File ? `File: ${value.name}` : value);
+      }
 
       const response = await fetch(endpoint, {
         method: "PUT",
@@ -462,12 +482,12 @@ export default function RentTransactionsTable() {
           <select
             value={filters.paidStatus || ""}
             onChange={(e) => handleFilterChange("paidStatus", e.target.value)}
-            className="w-32 px-2 py-1 text-sm rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-white/[0.05] dark:border-white/[0.1] dark:text-white [&>option]:dark:text-black"
+            className="w-32 px-2 py-1 text-sm rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:border-white/[0.1] dark:text-white"
           >
-            <option value="">All Status</option>
-            <option value="paid">Paid</option>
-            <option value="pending">Pending</option>
-            <option value="Partial">Partial</option>
+            <option value="" className="dark:bg-gray-950">All Status</option>
+            <option value="paid" className="dark:bg-gray-950">Paid</option>
+            <option value="pending" className="dark:bg-gray-950">Pending</option>
+            <option value="Partial" className="dark:bg-gray-950">Partial</option>
           </select>
 
           <DatePicker
@@ -513,7 +533,7 @@ export default function RentTransactionsTable() {
             <div className="overflow-hidden">
               <div className="max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700">
                 <Table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <TableHeader className="sticky top-0 z-10 bg-white dark:bg-[#121212] border-b border-gray-200 dark:border-gray-700">
+                  <TableHeader className="sticky top-0 z-10 bg-white dark:bg-[#13141a] border-b border-gray-200 dark:border-gray-700">
                     <TableRow>
                       {[
                         // { width: "w-10",  label: "ID" },
@@ -532,7 +552,7 @@ export default function RentTransactionsTable() {
                       ].map(({ width, label }) => (
                         <TableCell
                           key={label}
-                          className={`${width} px-6 py-4 font-semibold text-gray-900 dark:text-white whitespace-nowrap bg-gray-50 dark:bg-[#4f46e5]`}
+                          className={`${width} px-6 py-4 font-semibold text-gray-900 dark:text-white whitespace-nowrap bg-gray-50 dark:bg-brand-500`}
                         >
                           {label}
                         </TableCell>
@@ -629,7 +649,7 @@ export default function RentTransactionsTable() {
 
                               {viewProofTransaction?.id === item.id && viewProofTransaction.image && (
                                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-                                  <div className="bg-white dark:bg-[#121212] rounded-lg p-4 shadow-lg relative max-w-xs w-full">
+                                  <div className="bg-white dark:bg-[#13141a] rounded-lg p-4 shadow-lg relative max-w-xs w-full">
                                     <button
                                       className="absolute top-4 right-4 text-3xl text-gray-500 hover:text-gray-800 dark:hover:text-red-500"
                                       onClick={() => setViewProofTransaction(null)}
@@ -735,12 +755,12 @@ export default function RentTransactionsTable() {
                       value={updateFormData.paymentType}
                       onChange={handleInputChange}
                       className={`w-full px-3 py-2 border ${formErrors.paymentType ? "border-red-500" : "border-gray-300 dark:border-gray-600"
-                        } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white`}
+                        } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white`}
                     >
-                      <option value="">Select Payment Type</option>
-                      <option value="online">Online</option>
-                      <option value="cash">Cash</option>
-                      <option value="cheque">Cheque</option>
+                      <option value="" className="dark:bg-gray-950 text-gray-500">Select Payment Type</option>
+                      <option value="online" className="dark:bg-gray-950">Online</option>
+                      <option value="cash" className="dark:bg-gray-950">Cash</option>
+                      <option value="cheque" className="dark:bg-gray-950">Cheque</option>
                     </select>
                     {formErrors.paymentType && (
                       <p className="mt-1 text-sm text-red-500">{formErrors.paymentType}</p>
@@ -759,12 +779,12 @@ export default function RentTransactionsTable() {
                       value={updateFormData.paidStatus}
                       onChange={handleInputChange}
                       className={`w-full px-3 py-2 border ${formErrors.paidStatus ? "border-red-500" : "border-gray-300 dark:border-gray-600"
-                        } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white`}
+                        } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white`}
                     >
-                      <option value="">Select Status</option>
-                      <option value="paid">Paid</option>
-                      <option value="pending">Pending</option>
-                      <option value="Partial">Partial</option>
+                      <option value="" className="dark:bg-gray-950 text-gray-500">Select Status</option>
+                      <option value="paid" className="dark:bg-gray-950">Paid</option>
+                      <option value="pending" className="dark:bg-gray-950">Pending</option>
+                      <option value="Partial" className="dark:bg-gray-950">Partial</option>
                     </select>
                     {formErrors.paidStatus && (
                       <p className="mt-1 text-sm text-red-500">{formErrors.paidStatus}</p>
@@ -826,19 +846,6 @@ export default function RentTransactionsTable() {
 
                 {/* Row 4: Rent Period & Update Proof */}
                 <div className="flex space-x-4">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Rent Period (e.g. April 2026)
-                    </label>
-                    <input
-                      type="text"
-                      name="monthYear"
-                      value={updateFormData.monthYear}
-                      onChange={handleInputChange}
-                      placeholder="e.g. April 2026"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                    />
-                  </div>
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Update Proof

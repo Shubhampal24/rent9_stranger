@@ -82,13 +82,13 @@ export default function OwnerSelect({ selectedOwnerIds, onChange, label = "Assig
 
       <div className="relative">
         <select
-          className="w-full p-2 border rounded-lg dark:bg-white/[0.03] dark:border-white/[0.1] dark:text-white"
+          className="w-full p-2 border rounded-lg bg-white dark:bg-gray-900 dark:border-white/[0.1] dark:text-white"
           onChange={(e) => e.target.value && toggleOwner(e.target.value)}
           value=""
         >
-          <option value="">Select an owner to assign...</option>
+          <option value="" className="dark:bg-gray-950">Select an owner to assign...</option>
           {owners.map((owner) => (
-            <option key={owner.id} value={owner.id} disabled={selectedOwnerIds.includes(owner.id)}>
+            <option key={owner.id} value={owner.id} disabled={selectedOwnerIds.includes(owner.id)} className="dark:bg-gray-950">
               {owner.owner_name || owner.ownerName}
             </option>
           ))}

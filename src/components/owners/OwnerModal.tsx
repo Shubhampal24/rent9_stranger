@@ -15,6 +15,7 @@ interface BankAccount {
   ifsc: string;
   branchName: string;
   details: string;
+  isDeleted?: boolean; // Added for soft deletion tracking
 }
 
 interface OwnerModalProps {
@@ -44,25 +45,43 @@ export default function OwnerModal({ isOpen, onClose, onSave, initialData }: Own
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (initialData) {
-      setForm({
-        ownerName: initialData.ownerName ?? "",
-        mobileNo: initialData.mobileNo ?? "",
-        ownerDetails: initialData.ownerDetails ?? "",
-        bankAccounts: initialData.bankAccounts?.length 
-          ? initialData.bankAccounts.map((b: any) => ({
-              _id: b._id,
-              accountHolder: b.accountHolder ?? "",
-              accountNo: b.accountNo ?? "",
-              bankName: b.bankName ?? "",
-              ifsc: b.ifsc ?? "",
-              branchName: b.branchName ?? "",
-              details: b.details ?? "",
-            }))
-          : [],
-      });
-      setShowBank(!!initialData.bankAccounts?.length);
-    } else {
+    if (isOpen && initialData?._id) {
+      // Fetch complete owner details including all bank accounts
+      const fetchOwnerDetails = async () => {
+        try {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rent/owners/${initialData._id}`, {
+            headers: {
+              "Authorization": `Bearer ${localStorage.getItem("token")}`,
+              "Content-Type": "application/json",
+            },
+          });
+          const json = await res.json();
+          if (json.success && json.data) {
+            const d = json.data;
+            setForm({
+              ownerName: d.ownerName ?? "",
+              mobileNo: d.mobileNo ?? "",
+              ownerDetails: d.ownerDetails ?? "",
+              bankAccounts: d.bankAccounts?.length 
+                ? d.bankAccounts.map((b: any) => ({
+                    _id: b._id,
+                    accountHolder: b.accountHolder ?? "",
+                    accountNo: b.accountNo ?? "",
+                    bankName: b.bankName ?? "",
+                    ifsc: b.ifsc ?? "",
+                    branchName: b.branchName ?? "",
+                    details: b.details ?? "",
+                  }))
+                : [],
+            });
+            setShowBank(!!d.bankAccounts?.length);
+          }
+        } catch (error) {
+          console.error("Failed to fetch owner details:", error);
+        }
+      };
+      fetchOwnerDetails();
+    } else if (isOpen) {
       setForm({
         ownerName: "",
         mobileNo: "",
@@ -91,9 +110,17 @@ export default function OwnerModal({ isOpen, onClose, onSave, initialData }: Own
   };
 
   const removeBankAccount = (index: number) => {
-    const newBanks = form.bankAccounts.filter((_, i) => i !== index);
-    setForm((p) => ({ ...p, bankAccounts: newBanks }));
-    if (newBanks.length === 0) setShowBank(false);
+    const bank = form.bankAccounts[index];
+    if (bank._id) {
+      // If it has an _id, mark it as isDeleted: true instead of removing from array
+      const newBanks = [...form.bankAccounts];
+      newBanks[index] = { ...newBanks[index], isDeleted: true };
+      setForm((p) => ({ ...p, bankAccounts: newBanks }));
+    } else {
+      // If it's a new account (no _id), just remove it from array
+      const newBanks = form.bankAccounts.filter((_, i) => i !== index);
+      setForm((p) => ({ ...p, bankAccounts: newBanks }));
+    }
   };
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -104,12 +131,20 @@ export default function OwnerModal({ isOpen, onClose, onSave, initialData }: Own
       ownerName: form.ownerName.trim(),
       mobileNo: form.mobileNo.trim(),
       ownerDetails: form.ownerDetails.trim() || undefined,
-      bankAccounts: form.bankAccounts.filter(b => b.accountNo.trim()), // Only send banks with account numbers
+      bankAccounts: form.bankAccounts.map(b => ({
+        ...b,
+        accountHolder: b.accountHolder.trim(),
+        accountNo: b.accountNo.trim(),
+        bankName: b.bankName.trim(),
+        ifsc: b.ifsc.trim(),
+        branchName: b.branchName.trim(),
+        details: b.details.trim(),
+      })).filter(b => b._id || b.accountNo), // Keep if it has _id (for updates/deletes) or if it's new and has accountNo
     };
 
+    console.log("🚀 [OwnerModal] Submitting Payload:", JSON.stringify(payload, null, 2));
     onSave(payload);
-    setSaving(false);
-    onClose();
+    // Note: onSave in OwnerTable will handle the API call and logging the response
   };
 
   return (
@@ -176,7 +211,7 @@ export default function OwnerModal({ isOpen, onClose, onSave, initialData }: Own
               </button>
             </div>
 
-            {form.bankAccounts.length === 0 ? (
+            {form.bankAccounts.filter(b => !b.isDeleted).length === 0 ? (
               <div className="py-8 text-center border-2 border-dashed border-gray-100 dark:border-white/[0.05] rounded-xl">
                 <Landmark size={24} className="mx-auto text-gray-200 dark:text-gray-700 mb-2" />
                 <p className="text-sm text-gray-400">No bank accounts added yet</p>
@@ -184,49 +219,52 @@ export default function OwnerModal({ isOpen, onClose, onSave, initialData }: Own
               </div>
             ) : (
               <div className="space-y-4">
-                {form.bankAccounts.map((bank, idx) => (
-                  <div key={idx} className="relative group p-4 border border-gray-100 dark:border-white/[0.08] rounded-xl bg-gray-50/50 dark:bg-white/[0.02]">
-                    <div className="absolute -top-2.5 -left-2 bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
-                      #{idx + 1}
-                    </div>
-                    
-                    <button
-                      type="button"
-                      onClick={() => removeBankAccount(idx)}
-                      className="absolute top-2 right-2 p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                      title="Remove this bank"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                {form.bankAccounts.map((bank, idx) => {
+                  if (bank.isDeleted) return null;
+                  return (
+                    <div key={idx} className="relative group p-4 border border-gray-100 dark:border-white/[0.08] rounded-xl bg-gray-50/50 dark:bg-white/[0.02]">
+                      <div className="absolute -top-2.5 -left-2 bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+                        #{idx + 1}
+                      </div>
+                      
+                      <button
+                        type="button"
+                        onClick={() => removeBankAccount(idx)}
+                        className="absolute top-2 right-2 p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        title="Remove this bank"
+                      >
+                        <Trash2 size={14} />
+                      </button>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-2">
-                      <div>
-                        <Label>Account Holder *</Label>
-                        <Input type="text" value={bank.accountHolder} onChange={(e) => setBankField(idx, "accountHolder", e.target.value)} placeholder="Name on account" />
-                      </div>
-                      <div>
-                        <Label>Account Number *</Label>
-                        <Input type="text" value={bank.accountNo} onChange={(e) => setBankField(idx, "accountNo", e.target.value)} placeholder="Account #" />
-                      </div>
-                      <div>
-                        <Label>Bank Name *</Label>
-                        <Input type="text" value={bank.bankName} onChange={(e) => setBankField(idx, "bankName", e.target.value)} placeholder="SBI, HDFC, etc." />
-                      </div>
-                      <div>
-                        <Label>IFSC Code *</Label>
-                        <Input type="text" value={bank.ifsc} onChange={(e) => setBankField(idx, "ifsc", e.target.value)} placeholder="e.g. SBIN..." />
-                      </div>
-                      <div>
-                        <Label>Branch</Label>
-                        <Input type="text" value={bank.branchName} onChange={(e) => setBankField(idx, "branchName", e.target.value)} placeholder="Branch name" />
-                      </div>
-                      <div>
-                        <Label>Details / Notes</Label>
-                        <Input type="text" value={bank.details} onChange={(e) => setBankField(idx, "details", e.target.value)} placeholder="Extra notes" />
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-2">
+                        <div>
+                          <Label>Account Holder *</Label>
+                          <Input type="text" value={bank.accountHolder} onChange={(e) => setBankField(idx, "accountHolder", e.target.value)} placeholder="Name on account" />
+                        </div>
+                        <div>
+                          <Label>Account Number *</Label>
+                          <Input type="text" value={bank.accountNo} onChange={(e) => setBankField(idx, "accountNo", e.target.value)} placeholder="Account #" />
+                        </div>
+                        <div>
+                          <Label>Bank Name *</Label>
+                          <Input type="text" value={bank.bankName} onChange={(e) => setBankField(idx, "bankName", e.target.value)} placeholder="SBI, HDFC, etc." />
+                        </div>
+                        <div>
+                          <Label>IFSC Code *</Label>
+                          <Input type="text" value={bank.ifsc} onChange={(e) => setBankField(idx, "ifsc", e.target.value)} placeholder="e.g. SBIN..." />
+                        </div>
+                        <div>
+                          <Label>Branch</Label>
+                          <Input type="text" value={bank.branchName} onChange={(e) => setBankField(idx, "branchName", e.target.value)} placeholder="Branch name" />
+                        </div>
+                        <div>
+                          <Label>Details / Notes</Label>
+                          <Input type="text" value={bank.details} onChange={(e) => setBankField(idx, "details", e.target.value)} placeholder="Extra notes" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

@@ -160,13 +160,13 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave, mo
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
               >
-                <option value="Open">Open</option>
-                <option value="Process">Process</option>
-                <option value="Close">Close</option>
-                <option value="T Close">T Close</option>
-                <option value="Handover">Handover</option>
+                <option value="Open" className="dark:bg-gray-900">Open</option>
+                <option value="Process" className="dark:bg-gray-900">Process</option>
+                <option value="Close" className="dark:bg-gray-900">Close</option>
+                <option value="T Close" className="dark:bg-gray-900">T Close</option>
+                <option value="Handover" className="dark:bg-gray-900">Handover</option>
               </select>
             </div>
             <div>
@@ -587,7 +587,7 @@ export default function MasterTable() {
               <div className="max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700">
                 <Table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   {/* Fixed Header */}
-                  <TableHeader className="sticky top-0 z-10 bg-white dark:bg-[#121212] border-b border-gray-200 dark:border-gray-700">
+                  <TableHeader className="sticky top-0 z-10 bg-white dark:bg-[#13141a] border-b border-gray-200 dark:border-gray-700">
                     <TableRow>
                       {[
                         { width: "w-16", label: "Sr No" },
@@ -603,7 +603,7 @@ export default function MasterTable() {
                       ].map(({ width, label }) => (
                         <TableCell
                           key={label}
-                          className={`${width} px-6 py-4 font-bold text-gray-900 dark:text-white whitespace-nowrap dark:bg-[#4f46e5] text-center dark:from-gray-800 dark:to-gray-700 border-r border-gray-200 dark:border-gray-600 shadow-sm`}
+                          className={`${width} px-6 py-4 font-bold text-gray-900 dark:text-white whitespace-nowrap dark:bg-brand-500 text-center dark:from-gray-800 dark:to-gray-700 border-r border-gray-200 dark:border-gray-600 shadow-sm`}
                         >
                           <div className="flex items-center space-x-1">
                             <span className="text-sm uppercase tracking-wide">{label}</span>

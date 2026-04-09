@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "../ui/table";
 import Badge from "../ui/badge/Badge";
-import { Search, Zap, Wrench, FileText, Layers } from "lucide-react";
+import { Search, Loader2, Calendar, Zap, Wrench, FileText, Layers } from "lucide-react";
 
 interface PaymentSite {
   code: string | number;
@@ -27,6 +27,13 @@ export default function UpcomingRentSitesTable() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("All");
+  
+  // Month calculation
+  const getCurrentMonthYear = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthYear());
 
   const [categoriesSummary, setCategoriesSummary] = useState({
     total: 0,
@@ -40,53 +47,61 @@ export default function UpcomingRentSitesTable() {
       setLoading(true);
       setError(null);
       try {
-        const token = localStorage.getItem("token");
-        const headers = {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        };
+        const headers = { Authorization: `Bearer ${localStorage.getItem("token")}` };
+        const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/rental-dashboard/pending-bills`;
 
-        const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/rent/dashboard`;
+        // Unified API call for all categories
+        const response = await fetch(`${baseUrl}?category=all&monthYear=${selectedMonth}`, { headers });
+        
+        // Detailed log for debugging the 404 issue as requested
+        console.log(`[Pending Bills API] Status: ${response.status} ${response.statusText}`);
 
-        const [rentRes, elecRes, maintRes] = await Promise.all([
-          fetch(`${baseUrl}/upcoming-rents`, { headers }),
-          fetch(`${baseUrl}/pending-electricity`, { headers }),
-          fetch(`${baseUrl}/pending-maintenance`, { headers })
-        ]);
+        if (!response.ok) {
+          if (response.status === 404) {
+            // Treat 404 as "No records found" instead of an error
+            console.warn("[Pending Bills API] 404 Not Found - Showing empty state.");
+            setData([]);
+            setCategoriesSummary({ total: 0, rent: { count: 0, amount: 0 }, electricity: { count: 0, amount: 0 }, maintenance: { count: 0, amount: 0 } });
+            setLoading(false);
+            return;
+          }
+          throw new Error(`Fetch failed with status ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        // The ONLY data log allowed for the dashboard
+        console.log("[Dashboard] Pending Bills Data:", result);
 
-        const rawRent = await rentRes.json();
-        const rawElec = await elecRes.json();
-        const rawMaint = await maintRes.json();
+        if (!result.success || !Array.isArray(result.data)) {
+          setData([]);
+          setCategoriesSummary({ total: 0, rent: { count: 0, amount: 0 }, electricity: { count: 0, amount: 0 }, maintenance: { count: 0, amount: 0 } });
+          return;
+        }
 
-        // LOG EACH RESPONSE AS REQUESTED
-        console.log("Upcoming Rents Response:", rawRent);
-        console.log("Pending Electricity Response:", rawElec);
-        console.log("Pending Maintenance Response:", rawMaint);
-
-        const rentItems = (rawRent.success ? rawRent.data : []).map((item: any) => ({
-          ...item,
-          category: "Rent" as const,
-          id: item.siteId || item.id
+        // Map items to match internal UI structure
+        const mappedData = result.data.map((item: any) => ({
+          id: item.siteId || item._id || item.id,
+          code: item.code || "N/A",
+          siteName: item.siteName || "Unnamed Site",
+          location: item.location || item.propertyLocation || "N/A",
+          monthlyRent: Number(item.monthlyRent || item.pendingAmount || 0),
+          paymentDay: item.paymentDay || "1st",
+          status: item.status || "pending",
+          category: item.category as any,
+          pendingAmount: Number(item.pendingAmount || 0)
         }));
 
-        const elecItems = (rawElec.success ? rawElec.data : []).map((item: any) => ({
-          ...item,
-          category: "Electricity" as const,
-          id: item.siteId || item.id
-        }));
+        setData(mappedData);
 
-        const maintItems = (rawMaint.success ? rawMaint.data : []).map((item: any) => ({
-          ...item,
-          category: "Maintenance" as const,
-          id: item.siteId || item.id
-        }));
+        // Derive category-specific items for summary
+        const rentItems = mappedData.filter((i: any) => i.category === "Rent");
+        const elecItems = mappedData.filter((i: any) => i.category === "Electricity");
+        const maintItems = mappedData.filter((i: any) => i.category === "Maintenance");
 
-        const combinedData = [...rentItems, ...elecItems, ...maintItems];
-        setData(combinedData);
-
-        // Calculate summary categories
+        // Calculate summary for the header
         setCategoriesSummary({
-          total: combinedData.length,
+          total: mappedData.length,
           rent: {
             count: rentItems.length,
             amount: rentItems.reduce((acc: number, item: any) => acc + (item.pendingAmount || 0), 0)
@@ -101,15 +116,15 @@ export default function UpcomingRentSitesTable() {
           }
         });
 
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Something went wrong");
+      } catch (err: any) {
+        setError(err.message || "Something went wrong while fetching dashboard data");
       } finally {
         setLoading(false);
       }
     };
 
     fetchAllData();
-  }, []);
+  }, [selectedMonth]);
 
   const filteredData = useMemo(() => {
     let result = data;
@@ -172,7 +187,7 @@ export default function UpcomingRentSitesTable() {
           <div className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer ${activeCategory === "Rent" ? "bg-white dark:bg-gray-800 border-blue-200 shadow-sm ring-1 ring-blue-500/10" : "bg-transparent border-transparent hover:bg-white/40"}`} onClick={() => setActiveCategory("Rent")}>
             <div className="flex items-center gap-2 mb-1">
               <FileText size={14} className="text-blue-500" />
-              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Rent Category</span>
+              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Rent</span>
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-extrabold text-gray-900 dark:text-white leading-none">{categoriesSummary.rent.count}</span>
@@ -206,17 +221,29 @@ export default function UpcomingRentSitesTable() {
 
       {/* Action Bar */}
       <div className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="relative w-full sm:w-auto">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search size={18} className="text-gray-400" />
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+          <div className="relative w-full sm:w-auto">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search size={18} className="text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search all pending payments..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-10 w-full sm:w-[300px] rounded-lg border border-gray-100 bg-gray-50/50 dark:bg-white/[0.03] dark:border-gray-800 pl-10 pr-4 text-sm text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/20"
+            />
           </div>
-          <input
-            type="text"
-            placeholder="Search all pending payments..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-10 w-full sm:w-[400px] rounded-lg border border-gray-100 bg-gray-50/50 dark:bg-white/[0.03] dark:border-gray-800 pl-10 pr-4 text-sm text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/20"
-          />
+          
+          <div className="relative w-full sm:w-auto">
+            <input
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="h-10 w-full rounded-lg border border-gray-100 bg-gray-50/50 dark:bg-white/[0.03] dark:border-gray-800 pl-10 pr-4 text-sm text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/20"
+            />
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+          </div>
         </div>
 
         <div className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">

@@ -106,11 +106,11 @@ export default function ConsumerSelect({ selectedConsumerIds, onChange, label = 
 
       <div className="relative">
         <select
-          className="w-full p-2.5 text-sm border border-gray-200 dark:border-white/[0.1] rounded-xl bg-white dark:bg-white/[0.03] text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+          className="w-full p-2.5 text-sm border border-gray-200 dark:border-white/[0.1] rounded-xl bg-white dark:bg-gray-900 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
           onChange={(e) => e.target.value && toggleConsumer(e.target.value)}
           value=""
         >
-          <option value="">Search or select consumer...</option>
+          <option value="" className="dark:bg-gray-950 dark:text-gray-400">Search or select consumer...</option>
           {consumers.map((c) => (
             <option key={c._id} value={c._id} disabled={selectedConsumerIds.includes(c._id)}>
               {c.consumerNo} {c.consumerName ? `(${c.consumerName})` : ""}

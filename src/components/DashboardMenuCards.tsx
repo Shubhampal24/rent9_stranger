@@ -64,7 +64,6 @@ export default function DashboardMenuCards() {
       }
 
       const statsJson = await statsResponse.json();
-      console.log("Dashboard Stats:", statsJson);
 
       setSiteCount(Number(statsJson?.data?.totalSites) || 0);
       setUpcomingPayments(Number(statsJson?.data?.upcomingRentSitesCount) || 0);
@@ -85,7 +84,6 @@ export default function DashboardMenuCards() {
       }
 
       const rentJson = await rentResponse.json();
-      console.log("Rent Transactions:", rentJson);
 
       // Normalize array safely
       const rentArray: any[] =
@@ -115,7 +113,6 @@ export default function DashboardMenuCards() {
         }
 
         const electricityJson = await electricityResponse.json();
-        console.log("Electricity Payments:", electricityJson);
 
         const electricityArray: any[] =
           Array.isArray(electricityJson)
@@ -127,8 +124,6 @@ export default function DashboardMenuCards() {
         setElectricityBillCount(electricityArray.length);
 
       } catch (error) {
-        console.error("Dashboard fetch error:", error);
-
         // Safe fallback
         setSiteCount(0);
         setUpcomingPayments(0);

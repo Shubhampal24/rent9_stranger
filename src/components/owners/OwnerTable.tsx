@@ -95,76 +95,25 @@ export default function OwnerTable() {
         : `${API}/api/rent/owners/`;
       const method = isUpdate ? "PUT" : "POST";
 
-      // 1. Save / Update Owner Profile (Basic info)
+      console.log(`🚀 [OwnerTable] ${method} Request to: ${url}`);
+      console.log(`🚀 [OwnerTable] Payload:`, JSON.stringify(formData, null, 2));
+
       const res = await fetch(url, {
         method,
         headers: authHeaders(),
-        body: JSON.stringify({
-          ownerName: formData.ownerName,
-          mobileNo: formData.mobileNo,
-          ownerDetails: formData.ownerDetails,
-          // For creation, backend supports first bank info in same payload
-          ...(isUpdate ? {} : (formData.bankAccounts?.[0] || {}))
-        }),
+        body: JSON.stringify(formData),
       });
 
+      const result = await res.json();
+      console.log(`🚀 [OwnerTable] API Response:`, JSON.stringify(result, null, 2));
+
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message ?? "Failed to save owner info");
-      }
-
-      const savedResponse = await res.json();
-      const finalOwnerId = ownerId || savedResponse.data?._id;
-
-      // 2. Handle Bank Accounts Synchronization (If it's an update or multiple banks added)
-      if (finalOwnerId && formData.bankAccounts) {
-        const currentBanks = formData.bankAccounts;
-        const initialBanks = currentOwner?.bankAccounts || [];
-
-        // a. Find banks to DELETE (Initially present but now missing)
-        const banksToRemove = initialBanks.filter(
-          (ib: any) => !currentBanks.some((cb: any) => cb._id === ib._id)
-        );
-        for (const bank of banksToRemove) {
-          await fetch(`${API}/api/rent/owners/${finalOwnerId}/bank-accounts/${bank._id}`, {
-            method: "DELETE",
-            headers: authHeaders(),
-          });
-        }
-
-        // b. Find banks to UPDATE or ADD
-        for (const [idx, bank] of currentBanks.entries()) {
-          // If it's a NEW owner, the 1st bank was already handled in Step 1
-          if (!isUpdate && idx === 0) continue; 
-
-          const bankPayload = {
-            accountHolder: bank.accountHolder,
-            accountNo: bank.accountNo,
-            bankName: bank.bankName,
-            ifsc: bank.ifsc,
-            branchName: bank.branchName,
-            details: bank.details,
-          };
-
-          if (bank._id) {
-            // Existing -> Update
-            await fetch(`${API}/api/rent/owners/${finalOwnerId}/bank-accounts/${bank._id}`, {
-              method: "PUT",
-              headers: authHeaders(),
-              body: JSON.stringify(bankPayload),
-            });
-          } else {
-            // New -> Create
-            await fetch(`${API}/api/rent/owners/${finalOwnerId}/bank-accounts`, {
-              method: "POST",
-              headers: authHeaders(),
-              body: JSON.stringify(bankPayload),
-            });
-          }
-        }
+        throw new Error(result.message ?? `Failed to ${isUpdate ? "update" : "create"} owner`);
       }
 
       toast.success(isUpdate ? "Owner and bank accounts updated!" : "Owner added successfully!");
+      setIsModalOpen(false);
+      setCurrentOwner(null);
       fetchOwners(page);
     } catch (e: any) {
       console.error("Save error:", e);

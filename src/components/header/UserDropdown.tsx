@@ -4,6 +4,8 @@ import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
+import { useTheme } from "../../context/ThemeContext";
+import { Moon, Sun } from "lucide-react";
 
 // Decode JWT without a library
 function parseJwt(token: string | null) {
@@ -15,6 +17,7 @@ function parseJwt(token: string | null) {
 }
 
 export default function UserDropdown() {
+  const { theme, toggleTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [userDetails, setUserDetails] = useState({ name: "", email: "", mobileNumber: "", role: "", loginId: "" });
   const [loading, setLoading] = useState(true);
@@ -112,18 +115,31 @@ export default function UserDropdown() {
         onClose={closeDropdown}
         className="absolute right-0 mt-[17px] flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
       >
-        <div>
-          <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            {userDetails.name || "User"}
-          </span>
-          <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-            {userDetails.email || userDetails.mobileNumber || userDetails.loginId || ""}
-          </span>
-          {userDetails.role && (
-            <span className="mt-1 inline-block px-2 py-0.5 text-theme-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-              {userDetails.role}
+        <div className="flex items-start justify-between">
+          <div>
+            <span className="block font-semibold text-gray-900 text-theme-md dark:text-white">
+              {userDetails.name || "User"}
             </span>
-          )}
+            <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
+              {userDetails.email || userDetails.mobileNumber || userDetails.loginId || ""}
+            </span>
+            {userDetails.role && (
+              <span className="mt-2 inline-block px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-brand-500/10 text-brand-500 border border-brand-500/20">
+                {userDetails.role}
+              </span>
+            )}
+          </div>
+          
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleTheme();
+            }}
+            className="p-2 rounded-xl bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:text-brand-500 transition-all border border-transparent hover:border-brand-500/30"
+            title="Toggle theme"
+          >
+            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
         </div>
 
         <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">

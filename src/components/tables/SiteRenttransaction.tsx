@@ -428,7 +428,7 @@ export default function SiteRentTransactionsTable({ siteId: propSiteId, site }: 
     }
     return (
         <div className="space-y-4">
-            <div className="flex flex-col gap-2 px-3 sticky top-0 z-20 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#121212]">
+            <div className="flex flex-col gap-2 px-3 sticky top-0 z-20 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#13141a]">
                 {/* Row 1: count + download */}
                 <div className="flex items-center justify-between gap-2">
                     <p className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
@@ -465,19 +465,19 @@ export default function SiteRentTransactionsTable({ siteId: propSiteId, site }: 
                     <select
                         value={filters.paid_status || ""}
                         onChange={(e) => handleFilterChange("paid_status", e.target.value)}
-                        className="flex-1 min-w-[8rem] px-2 py-2 min-h-[40px] text-sm rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-white/[0.05] dark:border-white/[0.1] dark:text-white [&>option]:dark:text-black">
-                        <option value="">All Status</option>
-                        <option value="Paid">Paid</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Partial">Partial</option>
+                        className="flex-1 min-w-[8rem] px-2 py-2 min-h-[40px] text-sm rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:border-white/[0.1] dark:text-white">
+                        <option value="" className="dark:bg-gray-950">All Status</option>
+                        <option value="Paid" className="dark:bg-gray-950">Paid</option>
+                        <option value="Pending" className="dark:bg-gray-950">Pending</option>
+                        <option value="Partial" className="dark:bg-gray-950">Partial</option>
                     </select>
                     <select
                         value={filters.payment_type || ""}
                         onChange={(e) => handleFilterChange("payment_type", e.target.value)}
-                        className="flex-1 min-w-[8rem] px-2 py-2 min-h-[40px] text-sm rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-white/[0.05] dark:border-white/[0.1] dark:text-white [&>option]:dark:text-black">
-                        <option value="">All Types</option>
-                        <option value="Rent">Rent</option>
-                        <option value="Electricity">Electricity</option>
+                        className="flex-1 min-w-[8rem] px-2 py-2 min-h-[40px] text-sm rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:border-white/[0.1] dark:text-white">
+                        <option value="" className="dark:bg-gray-950">All Types</option>
+                        <option value="Rent" className="dark:bg-gray-950">Rent</option>
+                        <option value="Electricity" className="dark:bg-gray-950">Electricity</option>
                     </select>
                     <DatePicker
                         selected={filters.start_date ? new Date(filters.start_date) : null}
@@ -517,7 +517,7 @@ export default function SiteRentTransactionsTable({ siteId: propSiteId, site }: 
                         <div className="overflow-hidden">
                             <div className="max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700">
                                 <Table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                    <TableHeader className="sticky top-0 z-10 bg-white dark:bg-[#121212] border-b border-gray-200 dark:border-gray-700">
+                                    <TableHeader className="sticky top-0 z-10 bg-white dark:bg-[#13141a] border-b border-gray-200 dark:border-gray-700">
                                         <TableRow>
                                             {[
                                                 { width: "w-10", label: "ID" },
@@ -535,7 +535,7 @@ export default function SiteRentTransactionsTable({ siteId: propSiteId, site }: 
                                             ].map(({ width, label }) => (
                                                 <TableCell
                                                     key={label}
-                                                    className={`${width} px-6 py-4 font-semibold text-gray-900 dark:text-white whitespace-nowrap bg-gray-50 dark:bg-[#4f46e5]`}
+                                                    className={`${width} px-6 py-4 font-semibold text-gray-900 dark:text-white whitespace-nowrap bg-gray-50 dark:bg-brand-500`}
                                                 >
                                                     {label}
                                                 </TableCell>
@@ -597,7 +597,7 @@ export default function SiteRentTransactionsTable({ siteId: propSiteId, site }: 
                                                             {/* Image Popup */}
                                                             {selectedTransaction?.id === item.id && selectedTransaction.image && (
                                                                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-                                                                    <div className="bg-white dark:bg-[#121212] rounded-lg p-4 shadow-lg relative max-w-xs w-full">
+                                                                    <div className="bg-white dark:bg-[#13141a] rounded-lg p-4 shadow-lg relative max-w-xs w-full">
                                                                         <button
                                                                             className="absolute top-4 right-4 text-3xl text-gray-500 hover:text-gray-800 dark:hover:text-red-500"
                                                                             onClick={() => setSelectedTransaction(null)}
@@ -685,11 +685,11 @@ export default function SiteRentTransactionsTable({ siteId: propSiteId, site }: 
                                         value={updateFormData.payment_type}
                                         onChange={handleInputChange}
                                         className={`w-full px-3 py-2 border ${formErrors.payment_type ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                                            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white`}
+                                            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white`}
                                     >
-                                        <option value="">Select Payment Type</option>
-                                        <option value="Rent">Rent</option>
-                                        <option value="Electricity">Electricity</option>
+                                        <option value="" className="dark:bg-gray-950">Select Payment Type</option>
+                                        <option value="Rent" className="dark:bg-gray-950">Rent</option>
+                                        <option value="Electricity" className="dark:bg-gray-950">Electricity</option>
                                     </select>
                                     {formErrors.payment_type && (
                                         <p className="mt-1 text-sm text-red-500">{formErrors.payment_type}</p>
@@ -704,12 +704,12 @@ export default function SiteRentTransactionsTable({ siteId: propSiteId, site }: 
                                         value={updateFormData.paid_status}
                                         onChange={handleInputChange}
                                         className={`w-full px-3 py-2 border ${formErrors.paid_status ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                                            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white`}
+                                            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white`}
                                     >
-                                        <option value="">Select Status</option>
-                                        <option value="paid">Paid</option>
-                                        <option value="pending">Pending</option>
-                                        <option value="failed">Partial</option>
+                                        <option value="" className="dark:bg-gray-950">Select Status</option>
+                                        <option value="paid" className="dark:bg-gray-950">Paid</option>
+                                        <option value="pending" className="dark:bg-gray-950">Pending</option>
+                                        <option value="failed" className="dark:bg-gray-950">Partial</option>
                                     </select>
                                     {formErrors.paid_status && (
                                         <p className="mt-1 text-sm text-red-500">{formErrors.paid_status}</p>

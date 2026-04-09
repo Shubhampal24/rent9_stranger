@@ -184,12 +184,12 @@ export default function UsersTable() {
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-700 dark:bg-white/[0.03] dark:text-white/90 [&>option]:dark:text-black"
+                className="px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-white"
               >
-                <option value="">All Roles</option>
-                <option value="admin">Admin</option>
-                <option value="user">User</option>
-                <option value="acestaff">Ace Staff</option>
+                <option value="" className="dark:bg-gray-950">All Roles</option>
+                <option value="admin" className="dark:bg-gray-950">Admin</option>
+                <option value="user" className="dark:bg-gray-950">User</option>
+                <option value="acestaff" className="dark:bg-gray-950">Ace Staff</option>
               </select>
 
               <Button size="sm" variant="primary" onClick={() => {
@@ -338,16 +338,16 @@ export default function UsersTable() {
                   <div>
                     <Label>Role</Label>
                     <select
-                      className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-700 dark:bg-white/[0.03] dark:text-white/90"
+                      className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-white"
                       value={selectedUser ? selectedUser.role : newUser.role}
                       onChange={(e) => selectedUser
                         ? setSelectedUser({ ...selectedUser, role: e.target.value })
                         : setNewUser({ ...newUser, role: e.target.value })
                       }
                     >
-                      <option value="user">User</option>
-                      <option value="admin">Admin</option>
-                      <option value="acestaff">Ace Staff</option>
+                      <option value="user" className="dark:bg-gray-950">User</option>
+                      <option value="admin" className="dark:bg-gray-950">Admin</option>
+                      <option value="acestaff" className="dark:bg-gray-950">Ace Staff</option>
                     </select>
                   </div>
                 </div>

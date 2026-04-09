@@ -1,12 +1,84 @@
 "use client";
-import { ThemeToggleButton } from "@/components/common/ThemeToggleButton";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
 import { useRouter, usePathname } from "next/navigation";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 
 import Link from "next/link";
 import Image from "next/image";
+import {
+  ChevronDownIcon,
+} from "../icons/index";
+import { 
+  BuildingIcon, 
+  FolderIcon, 
+  PlusCircleIcon, 
+  ZapIcon, 
+  Wrench, 
+  LayoutDashboard, 
+  CreditCard, 
+  ArrowRightLeft,
+  UserPlus,
+  Wallet,
+  History,
+  Plus
+} from "lucide-react";
+
+type NavItem = {
+  name: string;
+  icon: React.ReactNode;
+  path?: string;
+  subtitle?: string;
+  subItems?: { name: string; path: string; icon?: React.ReactNode; pro?: boolean; new?: boolean }[];
+};
+
+export const navItems: NavItem[] = [
+  {
+    name: "Dashboard",
+    icon: <LayoutDashboard size={14} />,
+    path: "/dashboard",
+  },
+  {
+    icon: <PlusCircleIcon size={14} />,
+    name: "Create",
+    subtitle: "site/owner/consumer",
+    subItems: [
+      { name: "Add Site", path: "/form-elements", icon: <Plus size={14} /> },
+      { name: "Add Owner", path: "/owners", icon: <UserPlus size={14} /> },
+      { name: "Add Consumer", path: "/consumers", icon: <ZapIcon size={14} /> },
+    ],
+  },
+  {
+    icon: <CreditCard size={14} />,
+    name: "Payments",
+    subtitle: "rent/elec/maint",
+    subItems: [
+      { name: "Rent Payment", path: "/blank", icon: <Wallet size={14} /> },
+      { name: "Electricity Payment", path: "/electricity", icon: <ZapIcon size={14} /> },
+      { name: "Maintenance Payment", path: "/maintenance", icon: <Wrench size={14} /> },
+    ],
+  },
+  {
+    icon: <ArrowRightLeft size={14} />,
+    name: "Transactions",
+    subtitle: "history/ledger",
+    subItems: [
+      { name: "Rent Transactions", path: "/rent-transactions", icon: <History size={14} /> },
+      { name: "Electricity Transactions", path: "/electricity-bills", icon: <ZapIcon size={14} /> },
+      { name: "Maintenance Transactions", path: "/maintenance-transactions", icon: <History size={14} /> },
+    ],
+  },
+  {
+    name: "All Sites",
+    icon: <BuildingIcon size={14} />,
+    path: "/basic-tables",
+  },
+  {
+    name: "Master File",
+    icon: <FolderIcon size={14} />,
+    path: "/master-tables",
+  },
+];
 
 const AppHeader: React.FC = () => {
   const [canGoBack, setCanGoBack] = useState(false);
@@ -31,37 +103,90 @@ const AppHeader: React.FC = () => {
     }
   };
 
+  const [siteCount, setSiteCount] = useState<number | null>(null);
+  const [openSubmenu, setOpenSubmenu] = useState<number | null>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+
+
+  const isActive = useCallback((path: string) => path === pathname, [pathname]);
+
   useEffect(() => {
     const isHomePage =
       pathname === "/" || pathname === "/dashboard" || pathname === "/home";
     setCanGoBack(!isHomePage);
+    setOpenSubmenu(null);
   }, [pathname]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) {
+        setOpenSubmenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        // Using the same endpoint as DashboardMenuCards
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rental-dashboard/stats`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const data = await res.json();
+        if (data.success) {
+          // Correct shape for this endpoint
+          setSiteCount(data.data?.totalSites ?? 0);
+        }
+      } catch (error) {
+        console.error("Header site count fetch failed:", error);
+        setSiteCount(null);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const handleSubmenuToggle = (index: number) => {
+    setOpenSubmenu((prev) => (prev === index ? null : index));
+  };
+
+  const getActiveBadgeText = () => {
+    const activeItem = navItems.find((nav) => {
+      if (nav.path === pathname) return true;
+      return nav.subItems?.some((sub) => sub.path === pathname);
+    });
+
+    if (!activeItem) return null;
+
+    const activeSubItem = activeItem.subItems?.find(
+      (sub) => sub.path === pathname
+    );
+
+    if (activeSubItem) {
+      return `${activeItem.name} › ${activeSubItem.name}`;
+    }
+
+    return activeItem.name;
+  };
+
+  const badgeText = getActiveBadgeText();
+
   return (
-    <header className="sticky top-0 z-[99999] flex h-14 w-full items-center border-b border-gray-200 bg-white px-4 dark:border-gray-800 dark:bg-[#121212] sm:h-16 sm:px-6">
+    <header className="sticky top-0 z-[99999] flex h-16 w-full items-center bg-white px-6 dark:bg-[#0D0D11] sm:px-8">
       {/* ── Left: hamburger + Logo ── */}
       <div className="flex items-center gap-4 flex-shrink-0">
-        {/* Hamburger / sidebar toggle */}
-        <button
-          onClick={handleToggle}
-          aria-label="Toggle sidebar"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path fillRule="evenodd" clipRule="evenodd" d="M3 6.75A.75.75 0 013.75 6h16.5a.75.75 0 010 1.5H3.75A.75.75 0 013 6.75zm0 5.25a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H3.75A.75.75 0 013 12zm0 5.25a.75.75 0 01.75-.75H20.25a.75.75 0 010 1.5H3.75a.75.75 0 01-.75-.75z" fill="currentColor" />
-          </svg>
-        </button>
 
-        {/* Logo */}
-        <Link href="/dashboard" className="flex items-center gap-2.5 group">
-           <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform">
-              <span className="font-bold text-lg">R</span>
-           </div>
-           <div className="hidden sm:flex flex-col leading-none">
-              <span className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">ACE Rental</span>
-              <span className="text-[10px] text-gray-400 font-medium uppercase tracking-[0.2em] mt-0.5">Admin</span>
-           </div>
-        </Link>
+
+        {/* Logo removed as per user request */}
+
 
         {/* Back button — only shows when not on home pages */}
         {canGoBack && (
@@ -77,12 +202,99 @@ const AppHeader: React.FC = () => {
         )}
       </div>
 
-      {/* ── Spacer (Center) ── */}
-      <div className="flex-1" />
+      {/* ── Center: Navigation Pill Bar ── */}
+      <div ref={navRef} className="flex-1 flex justify-center overflow-visible">
+
+          <nav className="flex flex-row items-center bg-[#1b1b26] rounded-full px-6 py-2 w-max max-w-full overflow-visible no-scrollbar shadow-md">
+            <ul className="flex flex-row items-center gap-8">
+              {navItems.map((nav, index) => {
+                const isMenuOpen = openSubmenu === index;
+                const hasActiveChild = nav.subItems?.some(sub => isActive(sub.path));
+                const isDirectActive = nav.path && isActive(nav.path);
+                const isCurrentlyActive = isDirectActive || hasActiveChild;
+
+                return (
+                  <li key={nav.name} className="relative group">
+                    {nav.subItems ? (
+                      <button
+                        onClick={() => handleSubmenuToggle(index)}
+                        className={`flex items-center gap-2.5 whitespace-nowrap text-sm font-semibold transition-colors cursor-pointer py-1 ${
+                          isCurrentlyActive || isMenuOpen ? "text-brand-500" : "text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        <span className="opacity-80">{nav.icon}</span>
+                        <span className="flex items-center gap-1.5">
+                          <span>{nav.name}</span>
+                          <ChevronDownIcon
+                             className={`w-4 h-4 transition-transform duration-200 ${
+                               isMenuOpen ? "rotate-180" : ""
+                             }`}
+                          />
+                        </span>
+                      </button>
+                    ) : (
+                      nav.path && (
+                        <Link
+                          href={nav.path}
+                          onClick={() => setOpenSubmenu(null)}
+                          className={`flex items-center gap-2.5 whitespace-nowrap text-sm font-semibold transition-colors cursor-pointer py-1 ${
+                            isCurrentlyActive ? "text-brand-500 border-b-2 border-brand-500" : "text-gray-400 hover:text-white"
+                          }`}
+                        >
+                          <span className="opacity-80">{nav.icon}</span>
+                          <span>{nav.name}</span>
+                          {nav.name === "All Sites" && siteCount !== null && (
+                            <span className="ml-1 px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-brand-500 text-white">
+                              {siteCount}
+                            </span>
+                          )}
+                        </Link>
+                      )
+                    )}
+
+                    {/* Dropdown Menu */}
+                    {nav.subItems && isMenuOpen && (
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 min-w-[180px] bg-[#292938] rounded-xl shadow-2xl py-2 z-[999999] border border-gray-700">
+                        <ul className="flex flex-col">
+                          {nav.subItems.map((subItem) => (
+                            <li key={subItem.name} className="w-full">
+                              <Link
+                                href={subItem.path}
+                                onClick={() => setOpenSubmenu(null)}
+                                className={`flex items-center gap-3 px-4 py-2 hover:bg-white/5 transition-colors ${
+                                  isActive(subItem.path) ? "text-brand-500 bg-white/5" : "text-gray-300"
+                                }`}
+                              >
+                                {subItem.icon && <span className="text-current opacity-80">{subItem.icon}</span>}
+                                <span className="text-xs font-medium">{subItem.name}</span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+      </div>
 
       {/* ── Right: theme toggle + user ── */}
-      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-        <ThemeToggleButton />
+      <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
+        {badgeText && (
+          <div className="hidden sm:flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20 shadow-sm transition-all hover:bg-brand-500/15">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
+              </span>
+              <span className="text-[11px] font-bold text-brand-500 uppercase tracking-wider whitespace-nowrap">
+                {badgeText}
+              </span>
+            </div>
+          </div>
+        )}
         <UserDropdown />
       </div>
     </header>

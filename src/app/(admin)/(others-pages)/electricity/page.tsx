@@ -140,10 +140,7 @@ const Page = () => {
       {!selectedSite ? (
         /* ─── SEARCH VIEW ─── */
         <div className="">
-          <div className="">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Electricity Payment</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Search and select a site to record electricity payment</p>
-          </div>
+          {/* Header removed as per user request */}
 
           <div className="flex gap-2 mb-3">
             <div className="relative flex-1">
@@ -292,6 +289,7 @@ const Page = () => {
               <div className="xl:col-span-2 p-4 border-r border-gray-200 dark:border-white/[0.06]">
                 <ElectricityPaymentForm
                   siteId={selectedSite._id || selectedSite.id}
+                  centreId={siteDetails.centreId}
                   owners={(siteDetails.owners || siteDetails.ownerId || []).map((owner: any) => ({
                     id: owner.ownerId?._id || owner._id || owner.id,
                     owner_name: owner.ownerId?.ownerName || owner.ownerName || owner.owner_name,

@@ -11,8 +11,8 @@ import Badge from "@/components/ui/badge/Badge";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Centre { _id: string; name: string; shortCode?: string; }
-interface BankAccount { _id: string; accountHolder: string; accountNo: string; bankName: string; ifsc: string; branchName?: string; }
-interface Owner { _id: string; ownerName: string; mobileNo: string; bankAccounts: BankAccount[]; }
+interface BankAccount { _id: string; accountHolder: string; accountNo: string; bankName: string; ifsc: string; branchName?: string; details?: string; }
+interface Owner { _id: string; ownerName: string; mobileNo: string; ownerDetails?: string; bankAccounts: BankAccount[]; }
 
 interface ElectricityConsumer {
   consumerNo: string;
@@ -25,11 +25,14 @@ interface OwnerAssignment {
   ownerName: string;
   ownershipPercentage: number;
   ownerMonthlyRent: number;
+  ownerDetails?: string;
+  ownerMobile?: string;
   bankAccount?: BankAccount;
   accountNo?: string;
   bankName?: string;
   ifsc?: string;
   branchName?: string;
+  details?: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -93,6 +96,7 @@ export default function EditSiteForm() {
       const siteId = params.id;
       const res = await fetch(`${API}/api/rent/sites/${siteId}`, { headers: authHeaders() });
       const json = await res.json();
+      console.log("🚀 [Site Details] Data:", json);
 
       if (!res.ok) throw new Error(json.message || "Failed to fetch site details");
 
@@ -102,15 +106,17 @@ export default function EditSiteForm() {
       // Map owners
       if (siteData.owners) {
         setOwners(siteData.owners.map((o: any) => ({
-          ownerId: o.ownerId?._id || o.ownerId,
-          ownerName: o.ownerId?.ownerName || "Unknown Owner",
-          ownershipPercentage: o.ownershipPercentage,
-          ownerMonthlyRent: o.ownerMonthlyRent,
+          ownerName: o.ownerId?.ownerName || o.ownerName || "Unknown Owner",
+          ownershipPercentage: o.ownershipPercentage || 0,
+          ownerMonthlyRent: o.ownerMonthlyRent || 0,
+          ownerMobile: o.ownerId?.mobileNo || o.ownerMobileNo || "",
+          ownerDetails: o.ownerId?.ownerDetails || o.ownerDetails || "",
           bankAccount: o.bankAccount,
           accountNo: o.accountNo,
           bankName: o.bankName,
           ifsc: o.ifsc,
-          branchName: o.branchName
+          branchName: o.branchName,
+          details: o.details
         })));
         setExpandedOwners(siteData.owners.map(() => false));
       }
@@ -168,35 +174,28 @@ export default function EditSiteForm() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
-      {/* ── Header Actions ── */}
-      <div className="flex items-center justify-between">
-        <button onClick={() => router.back()} className="flex items-center gap-2 text-gray-500 hover:text-gray-800 dark:hover:text-white transition-colors">
-          <ArrowLeft size={18} />
-          <span className="text-sm font-medium">Back to List</span>
-        </button>
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.push(`/sites/edit/${params.id}`)}
-            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.08] text-gray-700 dark:text-white text-sm font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-white/[0.05] transition-colors shadow-sm">
-            <Edit size={14} />
-            Edit Site
-          </button>
-          <button onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 text-sm font-semibold rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors">
-            <Trash2 size={14} />
-            Delete
-          </button>
-        </div>
-      </div>
-
       {/* ── Page Hero ── */}
       <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-6 text-white shadow-lg shadow-indigo-500/20 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+        <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
           <Building2 size={120} />
         </div>
+        
+        {/* Banner Actions */}
+        <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
+          <button onClick={() => router.push(`/sites/edit/${params.id}`)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all active:scale-95 shadow-lg">
+            <Edit size={12} /> Edit Site
+          </button>
+          <button onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/40 backdrop-blur-md border border-red-500/30 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all active:scale-95 shadow-lg">
+            <Trash2 size={12} /> Delete
+          </button>
+        </div>
+
         <div className="relative z-10 flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="px-2 py-0.5 bg-white/20 rounded text-[10px] uppercase font-bold tracking-wider">{site.code || "No Code"}</span>
+              <span className="px-2 py-0.5 bg-white/20 rounded text-[9px] uppercase font-black tracking-widest">{site.code || "No Code"}</span>
               <Badge size="sm" color={site.status === "active" ? "success" : "warning"}>{site.status || "Unknown Status"}</Badge>
             </div>
             <h1 className="text-2xl font-bold">{site.siteName}</h1>
@@ -322,11 +321,15 @@ export default function EditSiteForm() {
                     onClick={() => setExpandedOwners(prev => { const n = [...prev]; n[idx] = !n[idx]; return n; })}>
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 font-bold text-xs uppercase shadow-sm group-hover/owner:rotate-6 transition-transform">
-                        {o.ownerName.charAt(0)}
+                        {o.ownerName?.charAt(0)}
                       </div>
                       <div>
                         <p className="font-bold text-sm text-gray-800 dark:text-white uppercase tracking-tight">{o.ownerName}</p>
-                        <p className="text-[10px] text-indigo-500 font-bold uppercase tracking-widest">{o.ownershipPercentage}% Share</p>
+                        <div className="flex items-center gap-2">
+                          {o.ownerMobile && (
+                            <p className="text-[10px] text-gray-400 font-medium">{o.ownerMobile}</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
@@ -340,12 +343,21 @@ export default function EditSiteForm() {
                     </div>
                   </div>
                   {expandedOwners[idx] && (
-                    <div className="p-4 bg-white dark:bg-gray-900/50 grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
-                      <ViewField label="Bank Name" value={o.bankAccount?.bankName || o.bankName} />
-                      <ViewField label="Account Holder" value={o.bankAccount?.accountHolder || o.ownerName} />
-                      <ViewField label="Account No" value={o.bankAccount?.accountNo || o.accountNo} />
-                      <ViewField label="IFSC Code" value={o.bankAccount?.ifsc || o.ifsc} />
-                      <ViewField label="Branch" value={o.bankAccount?.branchName || o.branchName} span2 />
+                    <div className="p-4 bg-white dark:bg-gray-900/50 space-y-4 animate-in slide-in-from-top-2 duration-200 border-t border-gray-50 dark:border-white/[0.02]">
+                      {o.ownerDetails && (
+                        <div className="px-3 py-2 bg-indigo-50/30 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-500/10 rounded-xl">
+                          <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Address / Remarks</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-300 italic font-medium">{o.ownerDetails}</p>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-6">
+                        <ViewField label="Bank Name" value={o.bankAccount?.bankName || o.bankName} />
+                        <ViewField label="Account Holder" value={o.bankAccount?.accountHolder || o.ownerName} />
+                        <ViewField label="Account No" value={o.bankAccount?.accountNo || o.accountNo} />
+                        <ViewField label="IFSC Code" value={o.bankAccount?.ifsc || o.ifsc} />
+                        <ViewField label="Branch Name" value={o.bankAccount?.branchName || o.branchName} />
+                        <ViewField label="Account Details" value={o.bankAccount?.details || o.details} />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -382,10 +394,10 @@ export default function EditSiteForm() {
                       </div>
                     </div>
                     {expandedConsumers[i] && (
-                      <div className="p-4 bg-white dark:bg-gray-900/50 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
+                      <div className="p-4 bg-white dark:bg-gray-900/50 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-in slide-in-from-top-2 duration-200 border-t border-gray-50 dark:border-white/[0.02]">
                         <ViewField label="Consumer Name" value={c.consumerName} />
-                        <ViewField label="Meter Number" value={c.consumerNo} />
-                        <ViewField label="Provider" value={c.electricityProvider} span2 />
+                        <ViewField label="Consumer Number" value={c.consumerNo} />
+                        <ViewField label="Electricity Provider" value={c.electricityProvider || "N/A"} />
                       </div>
                     )}
                   </div>

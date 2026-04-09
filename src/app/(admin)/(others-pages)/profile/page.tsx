@@ -28,53 +28,29 @@ function InfoRow({ label, value }: { label: string; value?: React.ReactNode }) {
   );
 }
 
-// ── Centre Card ────────────────────────────────────────────────────────────────
+// ── Centre Card (Compact Version) ───────────────────────────────────────────
 function CentreCard({ centre }: { centre: any }) {
   const isActive = centre.isActiveToday;
   return (
-    <div className={`relative rounded-2xl border p-4 transition-shadow hover:shadow-md ${
+    <div className={`group relative rounded-xl border p-2.5 transition-all hover:shadow-sm ${
       isActive
-        ? 'border-emerald-100 bg-emerald-50/60 dark:border-emerald-800/30 dark:bg-emerald-900/10'
+        ? 'border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/10'
         : 'border-gray-100 bg-white dark:border-white/[0.06] dark:bg-white/[0.02]'
     }`}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2.5">
-          <div className={`p-2 rounded-xl ${isActive ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-gray-100 dark:bg-white/[0.06]'}`}>
-            <Building2 size={15} className={isActive ? 'text-emerald-600' : 'text-gray-500'} />
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className={`p-1.5 rounded-lg shrink-0 ${isActive ? 'bg-emerald-500/20 text-emerald-500' : 'bg-gray-100 dark:bg-white/[0.06] text-gray-400'}`}>
+            <Building2 size={14} />
           </div>
-          <div>
-            <div className="font-semibold text-sm text-gray-900 dark:text-white leading-tight">{centre.name}</div>
-            {centre.shortCode && <div className="text-xs text-gray-400 mt-0.5">{centre.shortCode}</div>}
+          <div className="min-w-0 flex flex-col text-left">
+            <span className="font-bold text-xs text-gray-900 dark:text-white leading-none truncate" title={centre.name}>{centre.name}</span>
+            {centre.shortCode && <span className="text-[10px] text-gray-400 font-mono mt-0.5">{centre.shortCode}</span>}
           </div>
         </div>
-        <span className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
-          isActive
-            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
-        }`}>
-          {isActive ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
-          {isActive ? 'Active' : 'Inactive'}
-        </span>
-      </div>
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        {centre.city && (
-          <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-            <MapPin size={10} /> {centre.city}
-          </div>
-        )}
-        {centre.payCriteria && (
-          <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-            <CreditCard size={10} /> {centre.payCriteria}
-          </div>
-        )}
-        {centre.todaysBalance != null && (
-          <div className="col-span-2 mt-1 p-2 rounded-lg bg-white/60 dark:bg-white/[0.04] border border-gray-100 dark:border-white/[0.06]">
-            <div className="text-gray-400 text-xs mb-0.5">Today&apos;s Balance</div>
-            <div className="font-bold text-gray-900 dark:text-white">
-              ₹{centre.todaysBalance.toLocaleString('en-IN')}
-            </div>
-          </div>
-        )}
+        <div 
+          className={`shrink-0 w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-gray-300 dark:bg-gray-700'}`} 
+          title={isActive ? 'Active Today' : 'Inactive'}
+        />
       </div>
     </div>
   );
@@ -100,8 +76,9 @@ export default function ProfilePage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Failed to load user');
-      const data = await res.json();
-      setUser(data);
+      const json = await res.json();
+      const userData = json.data || json;
+      setUser(userData);
     } catch (e: any) {
       setError(e.message ?? 'Failed to load profile');
     } finally {
@@ -284,7 +261,7 @@ export default function ProfilePage() {
                 <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">No centres assigned</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                 {assignedCentres.map((centre: any) => (
                   <CentreCard key={centre._id} centre={centre} />
                 ))}

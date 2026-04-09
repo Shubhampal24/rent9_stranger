@@ -57,7 +57,6 @@ export default function StatisticsChart() {
         }
 
         const data = await response.json();
-        console.log("Statistics Chart Response:", data);
         if (data.success) {
           setChartData(data.data || []);
         }
