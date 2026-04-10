@@ -17,13 +17,15 @@ interface BankAccount { _id: string; accountHolder: string; accountNo: string; b
 interface Owner { _id: string; ownerName: string; mobileNo: string; ownerDetails?: string; bankAccounts: BankAccount[]; }
 
 interface BankPayout {
-  _id?: string;
+  _id?: string;           // SiteOwner record ID
+  bankId?: string;        // Owner Profile Bank Account ID
   accountHolder: string;
   accountNo: string;
   bankName: string;
   ifsc: string;
   branchName: string;
   details: string;
+  isDeleted?: boolean;
 }
 
 interface OwnerAssignment {
@@ -34,6 +36,7 @@ interface OwnerAssignment {
   ownerDetails?: string;
   ownerMonthlyRent: number | "";
   bankPayouts: BankPayout[];
+  ownerBanks?: any[];
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -129,9 +132,9 @@ export default function UpdateSitesForm() {
 
       // 1. Fetch Master Repos & Site Details
       const [uRes, oRes, sRes] = await Promise.all([
-         fetch(`${API}/api/users/${parseJwt(token!)?._id || parseJwt(token!)?.id}`, { headers: authHeaders() }),
-         fetch(`${API}/api/rent/owners/?page=1&limit=500`, { headers: authHeaders() }),
-         fetch(`${API}/api/rent/sites/${siteId}`, { headers: authHeaders() })
+        fetch(`${API}/api/users/${parseJwt(token!)?._id || parseJwt(token!)?.id}`, { headers: authHeaders() }),
+        fetch(`${API}/api/rent/owners/?page=1&limit=500`, { headers: authHeaders() }),
+        fetch(`${API}/api/rent/sites/${siteId}`, { headers: authHeaders() })
       ]);
 
       const uJson = await uRes.json();
@@ -149,11 +152,11 @@ export default function UpdateSitesForm() {
       const newForm: any = { ...INITIAL_FORM };
       Object.keys(INITIAL_FORM).forEach(k => {
         if (siteData[k] !== undefined) {
-           if (k.toLowerCase().includes("date") && siteData[k]) {
-             newForm[k] = siteData[k].split("T")[0];
-           } else {
-             newForm[k] = siteData[k] ?? "";
-           }
+          if (k.toLowerCase().includes("date") && siteData[k]) {
+            newForm[k] = siteData[k].split("T")[0];
+          } else {
+            newForm[k] = siteData[k] ?? "";
+          }
         }
       });
       if (siteData.centreId?._id) newForm.centreId = siteData.centreId._id;
@@ -162,19 +165,21 @@ export default function UpdateSitesForm() {
       // Map Owners - Grouped by ownerId to support multiple bank payouts per owner
       if (siteData.owners) {
         const groupedMap = new Map<string, OwnerAssignment>();
-        
+
         siteData.owners.forEach((o: any) => {
           const oid = o.ownerId?._id || o.ownerId;
           const profileBank = o.ownerId?.bankAccounts?.[0] || {};
-          
+
+          const b = Array.isArray(o.bankAccount) ? o.bankAccount[0] : o.bankAccount;
           const payout: BankPayout = {
             _id: o._id, // This is the linking ID (SiteOwner record ID)
-            accountHolder: o.bankAccount?.accountHolder || o.accountHolder || profileBank.accountHolder || "",
-            accountNo: o.bankAccount?.accountNo || o.accountNo || profileBank.accountNo || "",
-            bankName: o.bankAccount?.bankName || o.bankName || profileBank.bankName || "",
-            ifsc: o.bankAccount?.ifsc || o.ifsc || profileBank.ifsc || "",
-            branchName: o.bankAccount?.branchName || o.branchName || profileBank.branchName || "",
-            details: o.bankAccount?.details || o.details || profileBank.details || "",
+            bankId: b?._id || "", // This is the actual bank account ID from owner profile
+            accountHolder: b?.accountHolder || o.accountHolder || profileBank.accountHolder || "",
+            accountNo: b?.accountNo || o.accountNo || profileBank.accountNo || "",
+            bankName: b?.bankName || o.bankName || profileBank.bankName || "",
+            ifsc: b?.ifsc || o.ifsc || profileBank.ifsc || "",
+            branchName: b?.branchName || o.branchName || profileBank.branchName || "",
+            details: b?.details || o.details || profileBank.details || "",
           };
 
           if (groupedMap.has(oid)) {
@@ -190,7 +195,7 @@ export default function UpdateSitesForm() {
             });
           }
         });
-        
+
         const mapped = Array.from(groupedMap.values());
         setAssignments(mapped);
         setExpandedAssign(mapped.map(() => false));
@@ -225,20 +230,21 @@ export default function UpdateSitesForm() {
       ownerName: owner?.ownerName || "",
       ownerMobile: owner?.mobileNo || "",
       ownerDetails: (owner as any)?.ownerDetails || "",
-      bankPayouts: owner?.bankAccounts?.length 
+      bankPayouts: owner?.bankAccounts?.length
         ? owner.bankAccounts.map(b => ({
-            ...EMPTY_NEW_BANK,
-            accountHolder: b.accountHolder || owner.ownerName || "",
-            accountNo: b.accountNo || "",
-            bankName: b.bankName || "",
-            ifsc: b.ifsc || "",
-            branchName: b.branchName || "",
-          }))
+          ...EMPTY_NEW_BANK,
+          accountHolder: b.accountHolder || owner.ownerName || "",
+          accountNo: b.accountNo || "",
+          bankName: b.bankName || "",
+          ifsc: b.ifsc || "",
+          branchName: b.branchName || "",
+        }))
         : [{
-            ...EMPTY_NEW_BANK,
-            accountHolder: owner?.ownerName || "",
-          }],
+          ...EMPTY_NEW_BANK,
+          accountHolder: owner?.ownerName || "",
+        }],
       ownerMonthlyRent: "",
+      ownerBanks: owner?.bankAccounts || [],
     };
     setAssignments(p => [...p, newAssign]);
     setExpandedAssign(p => [...p, true]);
@@ -275,9 +281,14 @@ export default function UpdateSitesForm() {
   const addBankPayout = (assignIdx: number) => {
     setAssignments(p => {
       const n = [...p];
-      n[assignIdx] = { 
-        ...n[assignIdx], 
-        bankPayouts: [...n[assignIdx].bankPayouts, { ...EMPTY_NEW_BANK }] 
+      const target = n[assignIdx];
+      if (!target) return p;
+      
+      const currentBanks = Array.isArray(target.bankPayouts) ? target.bankPayouts : [];
+      
+      n[assignIdx] = {
+        ...target,
+        bankPayouts: [...currentBanks, { ...EMPTY_NEW_BANK }]
       };
       return n;
     });
@@ -286,12 +297,20 @@ export default function UpdateSitesForm() {
   const removeBankPayout = (assignIdx: number, bankIdx: number) => {
     setAssignments(p => {
       const n = [...p];
-      if (n[assignIdx].bankPayouts.length > 1) {
-        const target = n[assignIdx].bankPayouts[bankIdx];
-        if (target._id) setRemovedAssignIds(prev => [...prev, target._id!]);
-        n[assignIdx].bankPayouts = n[assignIdx].bankPayouts.filter((_, i) => i !== bankIdx);
+      const target = n[assignIdx];
+      if (!target || !Array.isArray(target.bankPayouts)) return p;
+      
+      const bank = target.bankPayouts[bankIdx];
+      if (!bank) return p;
+
+      if (bank?._id || bank?.bankId) {
+        // Mark for deletion if it exists on server
+        const banks = [...target.bankPayouts];
+        banks[bankIdx] = { ...banks[bankIdx], isDeleted: true };
+        n[assignIdx] = { ...target, bankPayouts: banks };
       } else {
-        toast.error("At least one bank payout is required");
+        // Just remove from array if it's new
+        n[assignIdx].bankPayouts = target.bankPayouts.filter((_, i) => i !== bankIdx);
       }
       return n;
     });
@@ -300,9 +319,9 @@ export default function UpdateSitesForm() {
   const handleNewOwnerSaved = async (formData?: any) => {
     setIsNewOwnerModalOpen(false);
     await fetchData(); // refresh list to see new owner
-    
+
     if (formData && !formData._id) {
-       toast.success("New owner created. You can now select them from the list.");
+      toast.success("New owner created. You can now select them from the list.");
     }
   };
 
@@ -312,28 +331,42 @@ export default function UpdateSitesForm() {
     setSubmitting(true);
     try {
       const siteId = params.id;
-      
+
       // Step 1: Sync Owners (Add New or update Profile)
       const finalizedAssignments = [];
       for (const assign of assignments) {
         let ownerId = assign.ownerId;
-        const ownerPayload = {
+        const ownerPayload: any = {
           ownerName: assign.ownerName,
           mobileNo: assign.ownerMobile,
           ownerDetails: assign.ownerDetails,
-          bankAccounts: assign.bankPayouts.map(p => ({
-            _id: p._id, // Include ID if it's an existing bank account being updated
-            accountHolder: p.accountHolder,
-            accountNo: p.accountNo,
-            bankName: p.bankName,
-            ifsc: p.ifsc,
-            branchName: p.branchName,
-            details: p.details
-          }))
+          bankAccounts: assign.bankPayouts
+            .map(p => ({
+              _id: p.bankId, // Use the actual bank account ID
+              accountHolder: p.accountHolder,
+              accountNo: p.accountNo,
+              bankName: p.bankName,
+              ifsc: p.ifsc,
+              branchName: p.branchName,
+              details: p.details,
+              isDeleted: p.isDeleted
+            }))
+            .filter(b => b._id || b.accountNo) // Filter out incomplete new bank accounts
         };
 
+        let ownerBanks: any[] = [];
+        if (ownerId) {
+             const getRes = await fetch(`${API}/api/rent/owners/${ownerId}`, { headers: authHeaders() });
+             if (getRes.ok) {
+                const getJson = await getRes.json();
+                const existingOwner = getJson.data || getJson;
+                ownerBanks = existingOwner.bankAccounts || [];
+             }
+        }
+
         if (!ownerId && assign.ownerName) {
-           // Create New Owner
+            // Create New Owner
+            console.log("🚀 [Update Site] Creating New Owner Profile with multiple banks:", JSON.stringify(ownerPayload, null, 2));
             const oRes = await fetch(`${API}/api/rent/owners/`, { 
               method: "POST", 
               headers: authHeaders(), 
@@ -341,37 +374,46 @@ export default function UpdateSitesForm() {
             });
             if (oRes.ok) {
               const oJson = await oRes.json();
-              ownerId = oJson.data?._id || oJson._id;
+              const createdOwner = oJson.data || oJson;
+              ownerId = createdOwner._id;
+              ownerBanks = createdOwner.bankAccounts || [];
             }
         } else if (ownerId) {
-            // Update Existing Owner Profile with all bank accounts
-            console.log("🚀 [Update Site] Syncing Owner Profile:", ownerPayload);
+            // Update Existing Owner Profile
+            console.log("🚀 [Update Site] Syncing Owner Profile:", JSON.stringify(ownerPayload, null, 2));
             await fetch(`${API}/api/rent/owners/${ownerId}`, { 
               method: "PUT", 
               headers: authHeaders(), 
               body: JSON.stringify(ownerPayload) 
             });
+            
+            // After update, refetch to get the latest bank IDs (if any new ones were added)
+            const getRes = await fetch(`${API}/api/rent/owners/${ownerId}`, { headers: authHeaders() });
+            if (getRes.ok) {
+               const getJson = await getRes.json();
+               ownerBanks = (getJson.data || getJson).bankAccounts || [];
+            }
         }
-        finalizedAssignments.push({ ...assign, ownerId });
+        finalizedAssignments.push({ ...assign, ownerId, ownerBanks });
       }
 
       // Step 2: Sync Consumers
       const consumerIds: string[] = [];
       for (const c of fullElectricityConsumers) {
-         const consumerPayload = { consumerNo: c.consumerNo, consumerName: c.consumerName, electricityProvider: c.electricityProvider };
-         if (c._id && !c._id.startsWith("new")) {
-            // Update Existing Profile
-            await fetch(`${API}/api/rent/siteConsumer/${c._id}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(consumerPayload) });
-            consumerIds.push(c._id);
-         } else {
-            // Create New Profile
-            const cRes = await fetch(`${API}/api/rent/siteConsumer`, { method: "POST", headers: authHeaders(), body: JSON.stringify(consumerPayload) });
-            if (cRes.ok) {
-               const cJson = await cRes.json();
-               const cid = cJson.data?._id || cJson._id;
-               if (cid) consumerIds.push(cid);
-            }
-         }
+        const consumerPayload = { consumerNo: c.consumerNo, consumerName: c.consumerName, electricityProvider: c.electricityProvider };
+        if (c._id && !c._id.startsWith("new")) {
+          // Update Existing Profile
+          await fetch(`${API}/api/rent/siteConsumer/${c._id}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(consumerPayload) });
+          consumerIds.push(c._id);
+        } else {
+          // Create New Profile
+          const cRes = await fetch(`${API}/api/rent/siteConsumer`, { method: "POST", headers: authHeaders(), body: JSON.stringify(consumerPayload) });
+          if (cRes.ok) {
+            const cJson = await cRes.json();
+            const cid = cJson.data?._id || cJson._id;
+            if (cid) consumerIds.push(cid);
+          }
+        }
       }
 
       // Step 3: Update Site Core
@@ -381,46 +423,50 @@ export default function UpdateSitesForm() {
       // Step 4: Sync Assignments
       // A. Remove Deletions
       for (const rid of removedAssignIds) {
-         await fetch(`${API}/api/rent/owners/site-owner/${rid}`, { method: "DELETE", headers: authHeaders() });
+        await fetch(`${API}/api/rent/owners/site-owner/${rid}`, { method: "DELETE", headers: authHeaders() });
       }
       for (const rid of removedConsumerIds) {
-         await fetch(`${API}/api/rent/siteConsumer/assign/${siteId}/${rid}`, { method: "DELETE", headers: authHeaders() });
+        await fetch(`${API}/api/rent/siteConsumer/assign/${siteId}/${rid}`, { method: "DELETE", headers: authHeaders() });
       }
 
-      // B. Create/Update Assignments
+      // B. Create/Update Assignments (Handling multiple banks per owner)
       for (const assign of finalizedAssignments) {
         if (!assign.ownerId) continue;
         
-        const assignPayload: any = {
-          siteId,
-          ownerId: assign.ownerId,
-          ownerMonthlyRent: Number(assign.ownerMonthlyRent) || 0,
-        };
+        // We match assignments based on the bankAccountId linking them
+        const profileBanks = assign.ownerBanks || [];
+        const uiBanks = assign.bankPayouts || [];
         
-        // Find existing SiteOwner record ID if it exists
-        const existingAssignmentId = assign.bankPayouts[0]?._id;
-        
-        if (existingAssignmentId) {
-           // Update Existing Link
-           await fetch(`${API}/api/rent/owners/site-owner/${existingAssignmentId}`, { 
-             method: "PUT", 
-             headers: authHeaders(), 
-             body: JSON.stringify(assignPayload) 
-           });
-        } else {
-           // Create New Link
-           await fetch(`${API}/api/rent/owners/site-owner/assign`, { 
-             method: "POST", 
-             headers: authHeaders(), 
-             body: JSON.stringify(assignPayload) 
-           });
+        for (const uiBank of uiBanks) {
+           if (uiBank.isDeleted) {
+              if (uiBank._id) await fetch(`${API}/api/rent/owners/site-owner/${uiBank._id}`, { method: "DELETE", headers: authHeaders() });
+              continue;
+           }
+           
+           // Find the database bank _id for this ui record (needed if it's a new bank account)
+           const matchingProfileBank = profileBanks.find(pb => pb.accountNo === uiBank.accountNo);
+           
+           const assignPayload: any = {
+             siteId,
+             ownerId: assign.ownerId,
+             ownerMonthlyRent: Number(assign.ownerMonthlyRent) || 0,
+             bankAccount: matchingProfileBank?._id || uiBank.bankId
+           };
+
+           if (uiBank._id) {
+             // Update existing assignment record
+             await fetch(`${API}/api/rent/owners/site-owner/${uiBank._id}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(assignPayload) });
+           } else {
+             // Create new assignment record
+             await fetch(`${API}/api/rent/owners/site-owner/assign`, { method: "POST", headers: authHeaders(), body: JSON.stringify(assignPayload) });
+           }
         }
       }
 
       // C. Consumer Assignments (Ensure all present linked)
       for (const cid of consumerIds) {
-         // The backend handled link upon creation in some flows, but to be sure:
-         await fetch(`${API}/api/rent/siteConsumer/assign`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ siteId, consumerId: cid }) });
+        // The backend handled link upon creation in some flows, but to be sure:
+        await fetch(`${API}/api/rent/siteConsumer/assign`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ siteId, consumerId: cid }) });
       }
 
       toast.success("Site configuration synchronized successfully!");
@@ -444,13 +490,13 @@ export default function UpdateSitesForm() {
       {/* ── Page Hero ── */}
       <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-5 text-white shadow-lg shadow-indigo-500/20">
         <div className="flex items-center justify-between">
-           <div>
-              <h2 className="text-xl font-bold">Site Configuration</h2>
-              <p className="text-indigo-100 text-sm mt-1">Configure all site parameters, tenant info, and owner assignments in one place.</p>
-           </div>
-           <button onClick={() => router.back()} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors">
-              <ArrowLeft size={20} />
-           </button>
+          <div>
+            <h2 className="text-xl font-bold">Site Configuration</h2>
+            <p className="text-indigo-100 text-sm mt-1">Configure all site parameters, tenant info, and owner assignments in one place.</p>
+          </div>
+          <button onClick={() => router.back()} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors">
+            <ArrowLeft size={20} />
+          </button>
         </div>
       </div>
 
@@ -565,55 +611,55 @@ export default function UpdateSitesForm() {
 
         {/* ── Section: Electricity Consumers ── */}
         <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
-           <SectionHeader icon={Zap} title="Electricity Consumers" action={
-             <button
-               type="button"
-               onClick={() => {
-                 setFullElectricityConsumers([...fullElectricityConsumers, { _id: `new-${Date.now()}`, consumerNo: "", consumerName: "", electricityProvider: "" }]);
-               }}
-               className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
-             >
-               <Plus size={14} /> Add Consumer
-             </button>
-           }/>
+          <SectionHeader icon={Zap} title="Electricity Consumers" action={
+            <button
+              type="button"
+              onClick={() => {
+                setFullElectricityConsumers([...fullElectricityConsumers, { _id: `new-${Date.now()}`, consumerNo: "", consumerName: "", electricityProvider: "" }]);
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              <Plus size={14} /> Add Consumer
+            </button>
+          } />
 
-           <div className="mt-4 space-y-4">
-             {fullElectricityConsumers.map((c, idx) => (
-                <div key={idx} className="p-5 border border-gray-100 dark:border-white/[0.08] rounded-2xl bg-gray-50/50 dark:bg-white/[0.02] space-y-4 relative group">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (c._id && !c._id.startsWith("new")) setRemovedConsumerIds(p => [...p, c._id]);
-                      setFullElectricityConsumers(p => p.filter((_, i) => i !== idx));
-                    }}
-                    className="absolute top-4 right-4 p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+          <div className="mt-4 space-y-4">
+            {fullElectricityConsumers.map((c, idx) => (
+              <div key={idx} className="p-5 border border-gray-100 dark:border-white/[0.08] rounded-2xl bg-gray-50/50 dark:bg-white/[0.02] space-y-4 relative group">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (c._id && !c._id.startsWith("new")) setRemovedConsumerIds(p => [...p, c._id]);
+                    setFullElectricityConsumers(p => p.filter((_, i) => i !== idx));
+                  }}
+                  className="absolute top-4 right-4 p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                >
+                  <Trash2 size={16} />
+                </button>
 
-                  <div className="flex items-center gap-3 mb-2">
-                     <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                        <Zap size={20} fill="currentColor" />
-                     </div>
-                     <div>
-                        <p className="font-bold text-sm text-gray-800 dark:text-white uppercase tracking-tight">{c.consumerNo || "New Consumer"}</p>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{c.electricityProvider || "Provider TBD"}</p>
-                     </div>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                    <Zap size={20} fill="currentColor" />
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Field label="Consumer Number"><Input value={c.consumerNo} onChange={e => { const n = [...fullElectricityConsumers]; n[idx].consumerNo = e.target.value; setFullElectricityConsumers(n); }} /></Field>
-                    <Field label="Consumer Name / Label"><Input value={c.consumerName} onChange={e => { const n = [...fullElectricityConsumers]; n[idx].consumerName = e.target.value; setFullElectricityConsumers(n); }} /></Field>
-                    <Field label="Electricity Provider"><Input value={c.electricityProvider} onChange={e => { const n = [...fullElectricityConsumers]; n[idx].electricityProvider = e.target.value; setFullElectricityConsumers(n); }} /></Field>
+                  <div>
+                    <p className="font-bold text-sm text-gray-800 dark:text-white uppercase tracking-tight">{c.consumerNo || "New Consumer"}</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{c.electricityProvider || "Provider TBD"}</p>
                   </div>
                 </div>
-             ))}
-             {fullElectricityConsumers.length === 0 && (
-               <div className="py-8 text-center border-2 border-dashed border-gray-100 dark:border-white/[0.05] rounded-2xl">
-                 <p className="text-sm text-gray-400 font-medium">No electricity consumers added yet.</p>
-               </div>
-             )}
-           </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <Field label="Consumer Number"><Input value={c.consumerNo} onChange={e => { const n = [...fullElectricityConsumers]; n[idx].consumerNo = e.target.value; setFullElectricityConsumers(n); }} /></Field>
+                  <Field label="Consumer Name / Label"><Input value={c.consumerName} onChange={e => { const n = [...fullElectricityConsumers]; n[idx].consumerName = e.target.value; setFullElectricityConsumers(n); }} /></Field>
+                  <Field label="Electricity Provider"><Input value={c.electricityProvider} onChange={e => { const n = [...fullElectricityConsumers]; n[idx].electricityProvider = e.target.value; setFullElectricityConsumers(n); }} /></Field>
+                </div>
+              </div>
+            ))}
+            {fullElectricityConsumers.length === 0 && (
+              <div className="py-8 text-center border-2 border-dashed border-gray-100 dark:border-white/[0.05] rounded-2xl">
+                <p className="text-sm text-gray-400 font-medium">No electricity consumers added yet.</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Section: Owner Assignments ── */}
@@ -622,10 +668,10 @@ export default function UpdateSitesForm() {
             icon={Users}
             title="Owner Assignments"
             action={
-               <button type="button" onClick={() => addOwnerAssignment()}
-                 className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors">
-                 <Plus size={14} /> Add Owner
-               </button>
+              <button type="button" onClick={() => addOwnerAssignment()}
+                className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors">
+                <Plus size={14} /> Add Owner
+              </button>
             }
           />
 
@@ -638,7 +684,7 @@ export default function UpdateSitesForm() {
             ) : (
               assignments.map((a, idx) => (
                 <div key={idx} className="border border-gray-100 dark:border-white/[0.08] rounded-2xl overflow-hidden shadow-sm bg-white dark:bg-gray-900/50">
-                  <div 
+                  <div
                     className="flex items-center justify-between px-5 py-4 bg-gray-50/50 dark:bg-white/[0.02] cursor-pointer group/header"
                     onClick={() => setExpandedAssign(prev => { const n = [...prev]; n[idx] = !n[idx]; return n; })}
                   >
@@ -652,68 +698,69 @@ export default function UpdateSitesForm() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                       <button type="button" onClick={(e) => { e.stopPropagation(); removeAssignment(idx); }} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
-                         <Trash2 size={16} />
-                       </button>
-                       {expandedAssign[idx] ? <ChevronUp size={18} className="text-gray-300" /> : <ChevronDown size={18} className="text-gray-300" />}
+                      <button type="button" onClick={(e) => { e.stopPropagation(); removeAssignment(idx); }} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
+                        <Trash2 size={16} />
+                      </button>
+                      {expandedAssign[idx] ? <ChevronUp size={18} className="text-gray-300" /> : <ChevronDown size={18} className="text-gray-300" />}
                     </div>
                   </div>
 
                   {expandedAssign[idx] && (
                     <div className="p-5 space-y-6 border-t border-gray-50 dark:border-white/[0.02]">
-                       <div>
-                          <div className="flex items-center gap-2 mb-4 border-b border-gray-50 dark:border-white/[0.04] pb-2">
-                             <Users size={14} className="text-indigo-500" />
-                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Master Identity</span>
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Field label="Owner Name"><Input value={a.ownerName} onChange={e => updateAssignment(idx, "ownerName", e.target.value)} /></Field>
-                            <Field label="Mobile No."><Input value={a.ownerMobile} onChange={e => updateAssignment(idx, "ownerMobile", e.target.value)} /></Field>
-                          </div>
-                       </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-4 border-b border-gray-50 dark:border-white/[0.04] pb-2">
+                          <Users size={14} className="text-indigo-500" />
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Master Identity</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Field label="Owner Name"><Input value={a.ownerName} onChange={e => updateAssignment(idx, "ownerName", e.target.value)} /></Field>
+                          <Field label="Mobile No."><Input value={a.ownerMobile} onChange={e => updateAssignment(idx, "ownerMobile", e.target.value)} /></Field>
+                        </div>
+                      </div>
 
-                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                         <Field label="Monthly Rent (₹)"><Input type="number" value={a.ownerMonthlyRent} onChange={e => updateAssignment(idx, "ownerMonthlyRent", e.target.value)} /></Field>
-                         <Field label="Address / Remarks"><Input value={a.ownerDetails} onChange={e => updateAssignment(idx, "ownerDetails", e.target.value)} /></Field>
-                       </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Field label="Monthly Rent (₹)"><Input type="number" value={a.ownerMonthlyRent} onChange={e => updateAssignment(idx, "ownerMonthlyRent", e.target.value)} /></Field>
+                        <Field label="Address / Remarks"><Input value={a.ownerDetails} onChange={e => updateAssignment(idx, "ownerDetails", e.target.value)} /></Field>
+                      </div>
 
-                       <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-white/[0.05]">
-                          <div className="flex items-center justify-between mb-2">
-                             <div className="flex items-center gap-2 group/bank">
-                               <Landmark size={14} className="text-indigo-500 transition-transform" />
-                               <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Bank Payout Configuration</span>
-                             </div>
-                             <button 
-                               type="button" 
-                               onClick={() => addBankPayout(idx)}
-                               className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
-                             >
-                               <Plus size={12} /> Add Bank Account
-                             </button>
+                      <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-white/[0.05]">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2 group/bank">
+                            <Landmark size={14} className="text-indigo-500 transition-transform" />
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Bank Payout Configuration</span>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => addBankPayout(idx)}
+                            className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                          >
+                            {/* <Plus size={12} /> Add Bank Account */}
+                          </button>
+                        </div>
 
-                          {a.bankPayouts.map((bank, bIdx) => (
+                        {a.bankPayouts.map((bank, bIdx) => {
+                          if (bank.isDeleted) return null;
+                          return (
                             <div key={bIdx} className="relative p-4 bg-gray-50 dark:bg-white/[0.02] rounded-2xl border border-gray-100 dark:border-white/[0.06]">
-                               {a.bankPayouts.length > 1 && (
-                                 <button 
-                                   type="button" 
-                                   onClick={() => removeBankPayout(idx, bIdx)}
-                                   className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 rounded-md"
-                                 >
-                                   <Trash2 size={12} />
-                                 </button>
-                               )}
-                               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                  <Field label="Account Holder"><Input placeholder="Account Holder" value={bank.accountHolder} onChange={e => updateBankPayout(idx, bIdx, "accountHolder", e.target.value)} /></Field>
-                                  <Field label="Account Number"><Input placeholder="Account Number" value={bank.accountNo} onChange={e => updateBankPayout(idx, bIdx, "accountNo", e.target.value)} /></Field>
-                                  <Field label="Bank Name"><Input placeholder="Bank Name" value={bank.bankName} onChange={e => updateBankPayout(idx, bIdx, "bankName", e.target.value)} /></Field>
-                                  <Field label="IFSC Code"><Input placeholder="IFSC Code" value={bank.ifsc} onChange={e => updateBankPayout(idx, bIdx, "ifsc", e.target.value)} /></Field>
-                                  <Field label="Branch Name"><Input placeholder="Branch Name" value={bank.branchName} onChange={e => updateBankPayout(idx, bIdx, "branchName", e.target.value)} /></Field>
-                                  <Field label="Payout Notes" span2><Input placeholder="Payout Notes" value={bank.details} onChange={e => updateBankPayout(idx, bIdx, "details", e.target.value)} /></Field>
-                               </div>
+                              <button
+                                type="button"
+                                onClick={() => removeBankPayout(idx, bIdx)}
+                                className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 rounded-md"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <Field label="Account Holder"><Input placeholder="Account Holder" value={bank.accountHolder} onChange={e => updateBankPayout(idx, bIdx, "accountHolder", e.target.value)} /></Field>
+                                <Field label="Account Number"><Input placeholder="Account Number" value={bank.accountNo} onChange={e => updateBankPayout(idx, bIdx, "accountNo", e.target.value)} /></Field>
+                                <Field label="Bank Name"><Input placeholder="Bank Name" value={bank.bankName} onChange={e => updateBankPayout(idx, bIdx, "bankName", e.target.value)} /></Field>
+                                <Field label="IFSC Code"><Input placeholder="IFSC Code" value={bank.ifsc} onChange={e => updateBankPayout(idx, bIdx, "ifsc", e.target.value)} /></Field>
+                                <Field label="Branch Name"><Input placeholder="Branch Name" value={bank.branchName} onChange={e => updateBankPayout(idx, bIdx, "branchName", e.target.value)} /></Field>
+                                <Field label="Notes" span2><Input placeholder="Notes" value={bank.details} onChange={e => updateBankPayout(idx, bIdx, "details", e.target.value)} /></Field>
+                              </div>
                             </div>
-                          ))}
-                       </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -724,11 +771,11 @@ export default function UpdateSitesForm() {
 
         {/* ── Footer ── */}
         <div className="flex items-center justify-between border-t border-gray-100 dark:border-white/[0.05] pt-6">
-           <p />
-           <button type="submit" disabled={submitting} className="flex items-center gap-2 px-8 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-indigo-500/20">
-              {submitting ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
-              {submitting ? "Updating Configuration..." : "Save Changes"}
-           </button>
+          <p />
+          <button type="submit" disabled={submitting} className="flex items-center gap-2 px-8 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-indigo-500/20">
+            {submitting ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
+            {submitting ? "Updating Configuration..." : "Save Changes"}
+          </button>
         </div>
       </form>
 

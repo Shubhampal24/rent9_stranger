@@ -23,6 +23,14 @@ interface Owner {
   ownerDetails?: string;
   bankAccounts: BankAccount[];
   createdAt?: string;
+  sites?: string[]; // Optional: if already provided by API
+}
+
+interface Site {
+  _id: string;
+  siteName: string;
+  code: string;
+  owners: any[];
 }
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
@@ -57,6 +65,8 @@ export default function OwnerTable() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentOwner, setCurrentOwner] = useState<Owner | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [ownerSiteMap, setOwnerSiteMap] = useState<Record<string, string[]>>({});
 
   const LIMIT = 10;
 
@@ -81,8 +91,41 @@ export default function OwnerTable() {
       setLoading(false);
     }
   }, []);
+  console.log("🚀 [OwnerTable] Owners:", owners);
 
-  useEffect(() => { fetchOwners(1); }, [fetchOwners]);
+  const fetchSites = useCallback(async () => {
+    try {
+      const res = await fetch(`${API}/api/rent/sites`, { headers: authHeaders() });
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      const siteList: Site[] = json.data || json || [];
+      setSites(siteList);
+
+      // Build a map of ownerId -> siteNames[]
+      const map: Record<string, string[]> = {};
+      siteList.forEach(site => {
+        if (site.owners) {
+          site.owners.forEach(o => {
+            const oid = o.ownerId?._id || o.ownerId;
+            if (oid) {
+              if (!map[oid]) map[oid] = [];
+              if (!map[oid].includes(site.siteName)) {
+                map[oid].push(site.siteName);
+              }
+            }
+          });
+        }
+      });
+      setOwnerSiteMap(map);
+    } catch (err) {
+      console.error("Failed to fetch sites for mapping:", err);
+    }
+  }, []);
+
+  useEffect(() => { 
+    fetchOwners(1);
+    fetchSites();
+  }, [fetchOwners, fetchSites]);
 
   // ── Save (Create / Update) ─────────────────────────────────────────────────
   const handleSave = async (formData: any) => {
@@ -141,7 +184,8 @@ export default function OwnerTable() {
   const filtered = owners.filter(
     (o) =>
       o.ownerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.mobileNo?.includes(searchTerm)
+      o.mobileNo?.includes(searchTerm) ||
+      (ownerSiteMap[o._id] || []).some(s => s.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -188,8 +232,8 @@ export default function OwnerTable() {
                 <th className="px-4 py-3 text-left font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider w-12">#</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">Owner</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">Mobile</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">Assigned Sites</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">Bank Accounts</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">Remarks</th>
                 <th className="px-4 py-3 text-center font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider w-24">Actions</th>
               </tr>
             </thead>
@@ -230,6 +274,19 @@ export default function OwnerTable() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {ownerSiteMap[owner._id]?.length ? (
+                          ownerSiteMap[owner._id].map((s, si) => (
+                            <span key={si} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800/30">
+                              {s}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-[10px] text-gray-400 italic">No Site</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
                       {owner.bankAccounts?.length ? (
                         <div className="flex flex-wrap gap-1.5">
                           {owner.bankAccounts.map((b) => (
@@ -239,9 +296,6 @@ export default function OwnerTable() {
                       ) : (
                         <span className="text-xs text-gray-300 dark:text-gray-600">No bank linked</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 max-w-[160px] truncate">
-                      {owner.ownerDetails || "—"}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1">

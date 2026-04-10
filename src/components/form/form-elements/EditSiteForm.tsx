@@ -27,12 +27,7 @@ interface OwnerAssignment {
   ownerMonthlyRent: number;
   ownerDetails?: string;
   ownerMobile?: string;
-  bankAccount?: BankAccount;
-  accountNo?: string;
-  bankName?: string;
-  ifsc?: string;
-  branchName?: string;
-  details?: string;
+  bankAccounts: BankAccount[];
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -105,19 +100,20 @@ export default function EditSiteForm() {
 
       // Map owners
       if (siteData.owners) {
-        setOwners(siteData.owners.map((o: any) => ({
-          ownerName: o.ownerId?.ownerName || o.ownerName || "Unknown Owner",
-          ownershipPercentage: o.ownershipPercentage || 0,
-          ownerMonthlyRent: o.ownerMonthlyRent || 0,
-          ownerMobile: o.ownerId?.mobileNo || o.ownerMobileNo || "",
-          ownerDetails: o.ownerId?.ownerDetails || o.ownerDetails || "",
-          bankAccount: o.bankAccount,
-          accountNo: o.accountNo,
-          bankName: o.bankName,
-          ifsc: o.ifsc,
-          branchName: o.branchName,
-          details: o.details
-        })));
+        setOwners(siteData.owners.map((o: any) => {
+          // Handle bankAccount as an array or object
+          const b = o.bankAccount;
+          const assignedBanks = Array.isArray(b) ? b : (b ? [b] : []);
+          
+          return {
+            ownerName: o.ownerId?.ownerName || o.ownerName || "Unknown Owner",
+            ownershipPercentage: o.ownershipPercentage || 0,
+            ownerMonthlyRent: o.ownerMonthlyRent || 0,
+            ownerMobile: o.ownerId?.mobileNo || o.ownerMobileNo || "",
+            ownerDetails: o.ownerId?.ownerDetails || o.ownerDetails || "",
+            bankAccounts: assignedBanks.length > 0 ? assignedBanks : (o.ownerId?.bankAccounts || []),
+          };
+        }));
         setExpandedOwners(siteData.owners.map(() => false));
       }
 
@@ -350,14 +346,31 @@ export default function EditSiteForm() {
                           <p className="text-xs text-gray-600 dark:text-gray-300 italic font-medium">{o.ownerDetails}</p>
                         </div>
                       )}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-6">
-                        <ViewField label="Bank Name" value={o.bankAccount?.bankName || o.bankName} />
-                        <ViewField label="Account Holder" value={o.bankAccount?.accountHolder || o.ownerName} />
-                        <ViewField label="Account No" value={o.bankAccount?.accountNo || o.accountNo} />
-                        <ViewField label="IFSC Code" value={o.bankAccount?.ifsc || o.ifsc} />
-                        <ViewField label="Branch Name" value={o.bankAccount?.branchName || o.branchName} />
-                        <ViewField label="Account Details" value={o.bankAccount?.details || o.details} />
-                      </div>
+                      {o.bankAccounts && o.bankAccounts.length > 0 ? (
+                        <div className="space-y-4">
+                          {o.bankAccounts.map((bank, bIdx) => (
+                            <div key={bIdx} className="relative p-4 bg-gray-50 dark:bg-white/[0.02] rounded-2xl border border-gray-100 dark:border-white/[0.06]">
+                              {o.bankAccounts.length > 1 && (
+                                <div className="absolute -top-2.5 -left-2 bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+                                  #{bIdx + 1}
+                                </div>
+                              )}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-6">
+                                <ViewField label="Bank Name" value={bank.bankName} />
+                                <ViewField label="Account Holder" value={bank.accountHolder} />
+                                <ViewField label="Account No" value={bank.accountNo} />
+                                <ViewField label="IFSC Code" value={bank.ifsc} />
+                                <ViewField label="Branch Name" value={bank.branchName} />
+                                <ViewField label="Notes" value={bank.details} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-4 text-center border-2 border-dashed border-gray-100 dark:border-white/[0.05] rounded-xl">
+                           <p className="text-xs text-gray-400 font-medium">No bank accounts assigned.</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
