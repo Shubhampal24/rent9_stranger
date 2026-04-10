@@ -23,7 +23,6 @@ interface MasterData {
   spaName: string;
   area: string;
   spaCode: string;
-  ownerName: string;
   openingDate: string;
   status: string;
   lineTrack: string;
@@ -60,7 +59,6 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave, mo
         spaName: "",
         area: "",
         spaCode: "",
-        ownerName: "",
         openingDate: "",
         status: "Open",
         lineTrack: "",
@@ -91,7 +89,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave, mo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 ">
-      <div className="bg-white dark:bg-white/[0.03] dark:text-amber-50 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide" style={{
+      <div className="bg-white dark:bg-gray-800 dark:text-amber-50 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide" style={{
         scrollbarWidth: 'none',
         msOverflowStyle: 'none'
       }}>
@@ -135,15 +133,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave, mo
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Owner Name</label>
-              <input
-                name="ownerName"
-                value={formData.ownerName}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
-              />
-            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Opening Date</label>
               <input
@@ -278,40 +268,6 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave, mo
   );
 };
 
-const SiteOwnerCell = ({ siteId }: { siteId?: string }) => {
-  const [ownerName, setOwnerName] = useState<string>("Loading...");
-
-  useEffect(() => {
-    if (!siteId) {
-      setOwnerName("-");
-      return;
-    }
-
-    const fetchOwner = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rent/sites/${siteId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error();
-        const json = await res.json();
-        const siteData = json.data || json;
-        if (siteData.owners && siteData.owners.length > 0) {
-          const names = siteData.owners.map((o: any) => o.ownerId?.ownerName || "Unknown").join(", ");
-          setOwnerName(names);
-        } else {
-          setOwnerName("-");
-        }
-      } catch (err) {
-        setOwnerName("-");
-      }
-    };
-
-    fetchOwner();
-  }, [siteId]);
-
-  return <span>{ownerName}</span>;
-};
 
 export default function MasterTable() {
   const [masterData, setMasterData] = useState<MasterData[]>([]);
@@ -529,7 +485,6 @@ export default function MasterTable() {
           (item.spaName || '').toLowerCase().includes(searchString) ||
           (item.cityName || '').toLowerCase().includes(searchString) ||
           (item.area || '').toLowerCase().includes(searchString) ||
-          (item.ownerName || '').toLowerCase().includes(searchString) ||
           (item.status || '').toLowerCase().includes(searchString)
         );
       })
@@ -595,7 +550,6 @@ export default function MasterTable() {
                         { width: "w-40", label: "SPA Name" },
                         { width: "w-32", label: "City" },
                         { width: "w-32", label: "Area" },
-                        { width: "w-40", label: "Owner Name" },
                         { width: "w-32", label: "Opening Date" },
                         { width: "w-24", label: "Status" },
                         { width: "w-48", label: "Address" }, // Reduced from w-96 to w-48
@@ -625,9 +579,7 @@ export default function MasterTable() {
                         <TableCell className="w-16 px-6 py-4 text-gray-900 dark:text-gray-100">{item.spaName}</TableCell>
                         <TableCell className="w-16 px-6 py-4 text-gray-900 dark:text-gray-100">{item.cityName}</TableCell>
                         <TableCell className="w-16 px-6 py-4 text-gray-900 dark:text-gray-100">{item.area}</TableCell>
-                        <TableCell className="w-16 px-6 py-4 text-gray-900 dark:text-gray-100 font-medium">
-                          <SiteOwnerCell siteId={item._id} />
-                        </TableCell>
+
                         <TableCell className="w-16 px-6 py-4 text-gray-900 dark:text-gray-100">
                           {item.openingDate ? new Date(item.openingDate).toLocaleDateString() : '-'}
                         </TableCell>

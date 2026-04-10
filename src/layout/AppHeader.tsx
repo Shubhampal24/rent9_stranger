@@ -21,7 +21,8 @@ import {
   UserPlus,
   Wallet,
   History,
-  Plus
+  Plus,
+  Menu
 } from "lucide-react";
 
 type NavItem = {
@@ -133,8 +134,8 @@ const AppHeader: React.FC = () => {
     const fetchStats = async () => {
       try {
         const token = localStorage.getItem("token");
-        // Using the same endpoint as DashboardMenuCards
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rental-dashboard/stats`, {
+        // Using the same endpoint as EcommerceMetrics and RevenueMixChart
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rent/dashboard/stats`, {
           headers: {
             "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json"
@@ -143,8 +144,8 @@ const AppHeader: React.FC = () => {
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         if (data.success) {
-          // Correct shape for this endpoint
-          setSiteCount(data.data?.totalSites ?? 0);
+          // Access total sites from the standard stats object
+          setSiteCount(data.data?.sites?.total ?? 0);
         }
       } catch (error) {
         console.error("Header site count fetch failed:", error);
@@ -180,10 +181,17 @@ const AppHeader: React.FC = () => {
   const badgeText = getActiveBadgeText();
 
   return (
-    <header className="sticky top-0 z-[99999] flex h-16 w-full items-center bg-white px-6 dark:bg-[#0D0D11] sm:px-8">
+    <header className="sticky top-0 z-[99999] flex h-16 w-full items-center justify-between bg-white px-6 dark:bg-[#0D0D11] sm:px-8">
       {/* ── Left: hamburger + Logo ── */}
-      <div className="flex items-center gap-4 flex-shrink-0">
-
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Mobile Toggle */}
+        <button
+          onClick={handleToggle}
+          className="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
+          aria-label="Toggle Sidebar"
+        >
+          <Menu size={20} />
+        </button>
 
         {/* Logo removed as per user request */}
 
@@ -202,10 +210,9 @@ const AppHeader: React.FC = () => {
         )}
       </div>
 
-      {/* ── Center: Navigation Pill Bar ── */}
-      <div ref={navRef} className="flex-1 flex justify-center overflow-visible">
-
-          <nav className="flex flex-row items-center bg-[#1b1b26] rounded-full px-6 py-2 w-max max-w-full overflow-visible no-scrollbar shadow-md">
+      {/* ── Center: Navigation Pill Bar (Hidden on Mobile) ── */}
+      <div ref={navRef} className="hidden lg:flex flex-1 justify-center overflow-visible">
+          <nav className="flex flex-row items-center bg-gray-50 dark:bg-[#1b1b26] rounded-full px-6 py-2 w-max max-w-full overflow-visible no-scrollbar shadow-sm border border-gray-200 dark:border-white/[0.08]">
             <ul className="flex flex-row items-center gap-8">
               {navItems.map((nav, index) => {
                 const isMenuOpen = openSubmenu === index;
@@ -219,7 +226,7 @@ const AppHeader: React.FC = () => {
                       <button
                         onClick={() => handleSubmenuToggle(index)}
                         className={`flex items-center gap-2.5 whitespace-nowrap text-sm font-semibold transition-colors cursor-pointer py-1 ${
-                          isCurrentlyActive || isMenuOpen ? "text-brand-500" : "text-gray-400 hover:text-white"
+                          isCurrentlyActive || isMenuOpen ? "text-brand-500" : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
                         }`}
                       >
                         <span className="opacity-80">{nav.icon}</span>
@@ -238,7 +245,7 @@ const AppHeader: React.FC = () => {
                           href={nav.path}
                           onClick={() => setOpenSubmenu(null)}
                           className={`flex items-center gap-2.5 whitespace-nowrap text-sm font-semibold transition-colors cursor-pointer py-1 ${
-                            isCurrentlyActive ? "text-brand-500 border-b-2 border-brand-500" : "text-gray-400 hover:text-white"
+                            isCurrentlyActive ? "text-brand-500 border-b-2 border-brand-500" : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
                           }`}
                         >
                           <span className="opacity-80">{nav.icon}</span>

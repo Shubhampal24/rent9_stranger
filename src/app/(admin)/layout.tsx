@@ -2,6 +2,7 @@
 
 import AppHeader from "@/layout/AppHeader";
 import Backdrop from "@/layout/Backdrop";
+import MobileSidebar from "@/layout/MobileSidebar";
 import { useSidebar } from "@/context/SidebarContext";
 import React from "react";
 
@@ -21,6 +22,9 @@ export default function AdminLayout({
 
       {/* Mobile Drawer Backdrop */}
       {isMobileOpen && <Backdrop />}
+
+      {/* Mobile Navigation Drawer */}
+      <MobileSidebar />
 
       {/* Persistent Sidebar removed to move nav to header */}
 

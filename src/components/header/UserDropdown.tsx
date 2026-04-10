@@ -76,22 +76,32 @@ export default function UserDropdown() {
         onClick={toggleDropdown} 
         className="flex items-center text-gray-700 dark:text-gray-400 dropdown-toggle"
       >
-        <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
-          <Image
-            width={44}
-            height={44}
-            src="/images/user/user.jpg"
-            alt="User"
-            priority
-          />
-        </span>
+        <span className="hidden mr-3 overflow-hidden rounded-full h-11 w-11 sm:block">
+           <Image
+             width={44}
+             height={44}
+             src="/images/user/user.jpg"
+             alt="User"
+             priority
+           />
+         </span>
+         
+         <span className="block mr-3 overflow-hidden rounded-full h-9 w-9 sm:hidden">
+           <Image
+             width={36}
+             height={36}
+             src="/images/user/user.jpg"
+             alt="User"
+             priority
+           />
+         </span>
 
-        <span className=" block mr-1 font-medium text-theme-sm">
+        <span className="hidden mr-1 font-medium text-theme-sm sm:block">
           {loading ? "…" : (userDetails.name || "User")}
         </span>
 
         <svg
-          className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
+          className={`hidden sm:block stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
             isOpen ? "rotate-180" : ""
           }`}
           width="18"

@@ -49,9 +49,14 @@ export default function InactiveRentSitesTable() {
       setError(null);
 
       try {
+        const token = localStorage.getItem("token");
         const [siteRes, statsRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rental-dashboard/deactive-sites`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rental-dashboard/stats`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rental-dashboard/deactive-sites`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rent/dashboard/stats`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
         ]);
 
         if (!siteRes.ok || !statsRes.ok) throw new Error("Failed to fetch data");
@@ -60,7 +65,13 @@ export default function InactiveRentSitesTable() {
         const statsData = await statsRes.json();
 
         setRentSites(siteData.deactiveSites || []);
-        setStats(statsData);
+        if (statsData.success) {
+          setStats({
+            totalSites: statsData.data?.sites?.total ?? 0,
+            totalPaidRentSites: statsData.data?.transactions?.paid ?? 0,
+            upcomingRentSitesCount: statsData.data?.transactions?.pending ?? 0,
+          });
+        }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Something went wrong");
       } finally {

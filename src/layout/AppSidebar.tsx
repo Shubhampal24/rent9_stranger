@@ -121,7 +121,7 @@ const AppSidebar: React.FC = () => {
     const fetchStats = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rental-dashboard/stats`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rent/dashboard/stats`, {
           headers: {
             "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json"
@@ -130,7 +130,7 @@ const AppSidebar: React.FC = () => {
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         if (data.success) {
-          setSiteCount(data.data?.totalSites ?? 0);
+          setSiteCount(data.data?.sites?.total ?? 0);
         }
       } catch (error) {
         console.error("Sidebar site count fetch failed:", error);

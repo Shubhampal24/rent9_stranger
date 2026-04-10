@@ -95,10 +95,13 @@ function SectionHeader({ icon: Icon, title, subtitle, action }: { icon: any; tit
 }
 
 // ─── Field Wrapper ────────────────────────────────────────────────────────────
-function Field({ label, children, span2 = false }: { label: string; children: React.ReactNode; span2?: boolean }) {
+function Field({ label, children, span2 = false, required = false }: { label: string; children: React.ReactNode; span2?: boolean; required?: boolean }) {
   return (
     <div className={span2 ? "col-span-2" : ""}>
-      <Label>{label}</Label>
+      <Label className="flex items-center gap-1">
+        {label}
+        {required && <span className="text-red-500 font-bold">*</span>}
+      </Label>
       {children}
     </div>
   );
@@ -283,9 +286,9 @@ export default function UpdateSitesForm() {
       const n = [...p];
       const target = n[assignIdx];
       if (!target) return p;
-      
+
       const currentBanks = Array.isArray(target.bankPayouts) ? target.bankPayouts : [];
-      
+
       n[assignIdx] = {
         ...target,
         bankPayouts: [...currentBanks, { ...EMPTY_NEW_BANK }]
@@ -299,7 +302,7 @@ export default function UpdateSitesForm() {
       const n = [...p];
       const target = n[assignIdx];
       if (!target || !Array.isArray(target.bankPayouts)) return p;
-      
+
       const bank = target.bankPayouts[bankIdx];
       if (!bank) return p;
 
@@ -356,43 +359,43 @@ export default function UpdateSitesForm() {
 
         let ownerBanks: any[] = [];
         if (ownerId) {
-             const getRes = await fetch(`${API}/api/rent/owners/${ownerId}`, { headers: authHeaders() });
-             if (getRes.ok) {
-                const getJson = await getRes.json();
-                const existingOwner = getJson.data || getJson;
-                ownerBanks = existingOwner.bankAccounts || [];
-             }
+          const getRes = await fetch(`${API}/api/rent/owners/${ownerId}`, { headers: authHeaders() });
+          if (getRes.ok) {
+            const getJson = await getRes.json();
+            const existingOwner = getJson.data || getJson;
+            ownerBanks = existingOwner.bankAccounts || [];
+          }
         }
 
         if (!ownerId && assign.ownerName) {
-            // Create New Owner
-            console.log("🚀 [Update Site] Creating New Owner Profile with multiple banks:", JSON.stringify(ownerPayload, null, 2));
-            const oRes = await fetch(`${API}/api/rent/owners/`, { 
-              method: "POST", 
-              headers: authHeaders(), 
-              body: JSON.stringify(ownerPayload) 
-            });
-            if (oRes.ok) {
-              const oJson = await oRes.json();
-              const createdOwner = oJson.data || oJson;
-              ownerId = createdOwner._id;
-              ownerBanks = createdOwner.bankAccounts || [];
-            }
+          // Create New Owner
+          console.log("🚀 [Update Site] Creating New Owner Profile with multiple banks:", JSON.stringify(ownerPayload, null, 2));
+          const oRes = await fetch(`${API}/api/rent/owners/`, {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify(ownerPayload)
+          });
+          if (oRes.ok) {
+            const oJson = await oRes.json();
+            const createdOwner = oJson.data || oJson;
+            ownerId = createdOwner._id;
+            ownerBanks = createdOwner.bankAccounts || [];
+          }
         } else if (ownerId) {
-            // Update Existing Owner Profile
-            console.log("🚀 [Update Site] Syncing Owner Profile:", JSON.stringify(ownerPayload, null, 2));
-            await fetch(`${API}/api/rent/owners/${ownerId}`, { 
-              method: "PUT", 
-              headers: authHeaders(), 
-              body: JSON.stringify(ownerPayload) 
-            });
-            
-            // After update, refetch to get the latest bank IDs (if any new ones were added)
-            const getRes = await fetch(`${API}/api/rent/owners/${ownerId}`, { headers: authHeaders() });
-            if (getRes.ok) {
-               const getJson = await getRes.json();
-               ownerBanks = (getJson.data || getJson).bankAccounts || [];
-            }
+          // Update Existing Owner Profile
+          console.log("🚀 [Update Site] Syncing Owner Profile:", JSON.stringify(ownerPayload, null, 2));
+          await fetch(`${API}/api/rent/owners/${ownerId}`, {
+            method: "PUT",
+            headers: authHeaders(),
+            body: JSON.stringify(ownerPayload)
+          });
+
+          // After update, refetch to get the latest bank IDs (if any new ones were added)
+          const getRes = await fetch(`${API}/api/rent/owners/${ownerId}`, { headers: authHeaders() });
+          if (getRes.ok) {
+            const getJson = await getRes.json();
+            ownerBanks = (getJson.data || getJson).bankAccounts || [];
+          }
         }
         finalizedAssignments.push({ ...assign, ownerId, ownerBanks });
       }
@@ -432,34 +435,34 @@ export default function UpdateSitesForm() {
       // B. Create/Update Assignments (Handling multiple banks per owner)
       for (const assign of finalizedAssignments) {
         if (!assign.ownerId) continue;
-        
+
         // We match assignments based on the bankAccountId linking them
         const profileBanks = assign.ownerBanks || [];
         const uiBanks = assign.bankPayouts || [];
-        
-        for (const uiBank of uiBanks) {
-           if (uiBank.isDeleted) {
-              if (uiBank._id) await fetch(`${API}/api/rent/owners/site-owner/${uiBank._id}`, { method: "DELETE", headers: authHeaders() });
-              continue;
-           }
-           
-           // Find the database bank _id for this ui record (needed if it's a new bank account)
-           const matchingProfileBank = profileBanks.find(pb => pb.accountNo === uiBank.accountNo);
-           
-           const assignPayload: any = {
-             siteId,
-             ownerId: assign.ownerId,
-             ownerMonthlyRent: Number(assign.ownerMonthlyRent) || 0,
-             bankAccount: matchingProfileBank?._id || uiBank.bankId
-           };
 
-           if (uiBank._id) {
-             // Update existing assignment record
-             await fetch(`${API}/api/rent/owners/site-owner/${uiBank._id}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(assignPayload) });
-           } else {
-             // Create new assignment record
-             await fetch(`${API}/api/rent/owners/site-owner/assign`, { method: "POST", headers: authHeaders(), body: JSON.stringify(assignPayload) });
-           }
+        for (const uiBank of uiBanks) {
+          if (uiBank.isDeleted) {
+            if (uiBank._id) await fetch(`${API}/api/rent/owners/site-owner/${uiBank._id}`, { method: "DELETE", headers: authHeaders() });
+            continue;
+          }
+
+          // Find the database bank _id for this ui record (needed if it's a new bank account)
+          const matchingProfileBank = profileBanks.find(pb => pb.accountNo === uiBank.accountNo);
+
+          const assignPayload: any = {
+            siteId,
+            ownerId: assign.ownerId,
+            ownerMonthlyRent: Number(assign.ownerMonthlyRent) || 0,
+            bankAccount: matchingProfileBank?._id || uiBank.bankId
+          };
+
+          if (uiBank._id) {
+            // Update existing assignment record
+            await fetch(`${API}/api/rent/owners/site-owner/${uiBank._id}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(assignPayload) });
+          } else {
+            // Create new assignment record
+            await fetch(`${API}/api/rent/owners/site-owner/assign`, { method: "POST", headers: authHeaders(), body: JSON.stringify(assignPayload) });
+          }
         }
       }
 
@@ -747,14 +750,14 @@ export default function UpdateSitesForm() {
                                 onClick={() => removeBankPayout(idx, bIdx)}
                                 className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 rounded-md"
                               >
-                                <Trash2 size={12} />
+                                {/* <Trash2 size={12} /> */}
                               </button>
                               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <Field label="Account Holder"><Input placeholder="Account Holder" value={bank.accountHolder} onChange={e => updateBankPayout(idx, bIdx, "accountHolder", e.target.value)} /></Field>
-                                <Field label="Account Number"><Input placeholder="Account Number" value={bank.accountNo} onChange={e => updateBankPayout(idx, bIdx, "accountNo", e.target.value)} /></Field>
-                                <Field label="Bank Name"><Input placeholder="Bank Name" value={bank.bankName} onChange={e => updateBankPayout(idx, bIdx, "bankName", e.target.value)} /></Field>
-                                <Field label="IFSC Code"><Input placeholder="IFSC Code" value={bank.ifsc} onChange={e => updateBankPayout(idx, bIdx, "ifsc", e.target.value)} /></Field>
-                                <Field label="Branch Name"><Input placeholder="Branch Name" value={bank.branchName} onChange={e => updateBankPayout(idx, bIdx, "branchName", e.target.value)} /></Field>
+                                <Field label="Account Holder" required><Input required placeholder="Account Holder" value={bank.accountHolder} onChange={e => updateBankPayout(idx, bIdx, "accountHolder", e.target.value)} /></Field>
+                                <Field label="Account Number" required><Input required placeholder="Account Number" value={bank.accountNo} onChange={e => updateBankPayout(idx, bIdx, "accountNo", e.target.value)} /></Field>
+                                <Field label="Bank Name" required><Input required placeholder="Bank Name" value={bank.bankName} onChange={e => updateBankPayout(idx, bIdx, "bankName", e.target.value)} /></Field>
+                                <Field label="IFSC Code" required><Input required placeholder="IFSC Code" value={bank.ifsc} onChange={e => updateBankPayout(idx, bIdx, "ifsc", e.target.value)} /></Field>
+                                <Field label="Branch Name" required><Input required placeholder="Branch Name" value={bank.branchName} onChange={e => updateBankPayout(idx, bIdx, "branchName", e.target.value)} /></Field>
                                 <Field label="Notes" span2><Input placeholder="Notes" value={bank.details} onChange={e => updateBankPayout(idx, bIdx, "details", e.target.value)} /></Field>
                               </div>
                             </div>

@@ -5,7 +5,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { ChevronDown, ChevronUp, MapPin, Phone, CreditCard, Building2, Landmark, Globe, ArrowLeft, MoreVertical, UserCheck } from 'lucide-react'
+import { ChevronDown, ChevronUp, MapPin, Phone, CreditCard, Building2, Landmark, Globe, ArrowLeft, MoreVertical, UserCheck, Search } from 'lucide-react'
 import RentPaymentForm from '@/components/form/form-elements/RentPayments'
 import RentEscalationTable from '@/components/form/form-elements/RentEscalationTable'
 import { Toaster } from 'react-hot-toast'
@@ -55,14 +55,35 @@ const Page = () => {
 
   const [selectedBank, setSelectedBank] = useState<string>('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [bankSearch, setBankSearch] = useState('')
 
-  // Get unique bank names for dropdown
-  const bankNames = Array.from(new Set(sites.map(site => site.added_bank_name).filter(Boolean)))
+  // Get unique bank names for dropdown with better extraction
+  const bankNames = React.useMemo(() => {
+    const names = sites.map(site => {
+      return site.addedBankName || 
+             site.added_bank_name || 
+             site.owners?.[0]?.bankAccount?.bankName || 
+             site.owners?.[0]?.ownerBankName || 
+             '';
+    }).filter(Boolean);
+    return Array.from(new Set(names)).sort() as string[];
+  }, [sites]);
+
+  const filteredBanks = bankNames.filter(bank => 
+    bank.toLowerCase().includes(bankSearch.toLowerCase())
+  );
 
   // Update filtered logic to include bank filter
   const filtered = sites.filter(site => {
     const matchesQuery = query.trim() === '' || site.siteName?.toLowerCase().includes(query.toLowerCase())
-    const matchesBank = selectedBank === '' || site.addedBankName === selectedBank
+    
+    const siteBank = site.addedBankName || 
+                    site.added_bank_name || 
+                    site.owners?.[0]?.bankAccount?.bankName || 
+                    site.owners?.[0]?.ownerBankName || 
+                    '';
+                    
+    const matchesBank = selectedBank === '' || siteBank === selectedBank
     return matchesQuery && matchesBank
   })
 
@@ -252,22 +273,45 @@ const Page = () => {
                 <ChevronDown size={14} className={`text-gray-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
               </button>
               {dropdownOpen && (
-                <div className="absolute z-20 top-full mt-1 w-full bg-white dark:bg-zinc-800 border border-gray-200 dark:border-white/[0.1] rounded-lg shadow-xl max-h-60 overflow-auto">
-                  <div
-                    className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-zinc-700 ${selectedBank === '' ? 'font-semibold text-blue-600' : 'text-gray-700 dark:text-gray-200'}`}
-                    onClick={() => { setSelectedBank(''); setDropdownOpen(false); setCurrentPage(1); }}
-                  >
-                    All Banks
-                  </div>
-                  {bankNames.map(bank => (
-                    <div
-                      key={bank}
-                      className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-zinc-700 ${selectedBank === bank ? 'font-semibold text-blue-600' : 'text-gray-700 dark:text-gray-200'}`}
-                      onClick={() => { setSelectedBank(bank); setDropdownOpen(false); setCurrentPage(1); }}
-                    >
-                      {bank}
+                <div className="absolute z-[100] top-full mt-1 w-full left-0 bg-white dark:bg-[#13141a] border border-gray-200 dark:border-white/[0.1] rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                  {/* Bank Search Input */}
+                  <div className="p-2 border-b border-gray-100 dark:border-white/[0.05] bg-gray-50/50 dark:bg-white/[0.02]">
+                    <div className="relative">
+                      <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search banks..."
+                        autoFocus
+                        value={bankSearch}
+                        onChange={(e) => setBankSearch(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.05] focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                        onClick={(e) => e.stopPropagation()}
+                      />
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto no-scrollbar">
+                    <div
+                      className={`px-4 py-2.5 text-sm cursor-pointer border-l-2 transition-colors ${selectedBank === '' ? 'bg-blue-50/50 dark:bg-blue-500/10 border-blue-500 text-blue-600 font-semibold' : 'border-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                      onClick={() => { setSelectedBank(''); setDropdownOpen(false); setBankSearch(''); setCurrentPage(1); }}
+                    >
+                      All Banks
+                    </div>
+                    {filteredBanks.map(bank => (
+                      <div
+                        key={bank}
+                        className={`px-4 py-2.5 text-sm cursor-pointer border-l-2 transition-colors ${selectedBank === bank ? 'bg-blue-50/50 dark:bg-blue-500/10 border-blue-500 text-blue-600 font-semibold' : 'border-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                        onClick={() => { setSelectedBank(bank); setDropdownOpen(false); setBankSearch(''); setCurrentPage(1); }}
+                      >
+                        {bank}
+                      </div>
+                    ))}
+                    {filteredBanks.length === 0 && bankSearch && (
+                      <div className="px-4 py-6 text-center text-xs text-gray-400">
+                        No banks found for "{bankSearch}"
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

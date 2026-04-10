@@ -91,10 +91,13 @@ function SectionHeader({ icon: Icon, title, subtitle, action }: { icon: any; tit
 }
 
 // ─── Field wrapper ────────────────────────────────────────────────────────────
-function Field({ label, children, span2 = false }: { label: string; children: React.ReactNode; span2?: boolean }) {
+function Field({ label, children, span2 = false, required = false }: { label: string; children: React.ReactNode; span2?: boolean; required?: boolean }) {
   return (
     <div className={span2 ? "col-span-2" : ""}>
-      <Label>{label}</Label>
+      <Label className="flex items-center gap-1">
+        {label}
+        {required && <span className="text-red-500 font-bold">*</span>}
+      </Label>
       {children}
     </div>
   );
@@ -285,7 +288,7 @@ export default function AddSiteForm() {
       const n = [...p];
       const target = n[assignIdx];
       if (!target || !Array.isArray(target.bankPayouts)) return p;
-      
+
       const banks = [...target.bankPayouts];
       banks[bankIdx] = { ...banks[bankIdx], [field]: val };
       n[assignIdx] = { ...target, bankPayouts: banks };
@@ -298,9 +301,9 @@ export default function AddSiteForm() {
       const n = [...p];
       const target = n[assignIdx];
       if (!target) return p;
-      
+
       const currentBanks = Array.isArray(target.bankPayouts) ? target.bankPayouts : [];
-      
+
       n[assignIdx] = {
         ...target,
         bankPayouts: [...currentBanks, { ...EMPTY_NEW_BANK }]
@@ -314,7 +317,7 @@ export default function AddSiteForm() {
       const n = [...p];
       const target = n[assignIdx];
       if (!target || !Array.isArray(target.bankPayouts)) return p;
-      
+
       const bank = target.bankPayouts[bankIdx];
       if (!bank) return p;
 
@@ -387,7 +390,7 @@ export default function AddSiteForm() {
       const finalizedAssignments = [];
       for (const assign of assignments) {
         let ownerId = assign.ownerId;
-        
+
         const ownerPayload: any = {
           ownerName: assign.ownerName,
           mobileNo: assign.ownerMobile,
@@ -405,17 +408,17 @@ export default function AddSiteForm() {
             }))
             .filter(b => b._id || b.accountNo) // Filter out incomplete new bank accounts
         };
-        
+
         let ownerBanks: any[] = [];
         if (ownerId) {
-           const getRes = await fetch(`${API}/api/rent/owners/${ownerId}`, { headers: authHeaders() });
-           if (getRes.ok) {
-              const getJson = await getRes.json();
-              const existingOwner = getJson.data || getJson;
-              ownerBanks = existingOwner.bankAccounts || [];
-           }
+          const getRes = await fetch(`${API}/api/rent/owners/${ownerId}`, { headers: authHeaders() });
+          if (getRes.ok) {
+            const getJson = await getRes.json();
+            const existingOwner = getJson.data || getJson;
+            ownerBanks = existingOwner.bankAccounts || [];
+          }
         }
-        
+
         if (!ownerId && assign.ownerName) {
           console.log("🚀 [Add Site] Creating New Owner Profile with multiple banks:", JSON.stringify(ownerPayload, null, 2));
 
@@ -444,8 +447,8 @@ export default function AddSiteForm() {
           // Refetch to get latest bank IDs
           const getRes = await fetch(`${API}/api/rent/owners/${ownerId}`, { headers: authHeaders() });
           if (getRes.ok) {
-             const getJson = await getRes.json();
-             ownerBanks = (getJson.data || getJson).bankAccounts || [];
+            const getJson = await getRes.json();
+            ownerBanks = (getJson.data || getJson).bankAccounts || [];
           }
         }
         finalizedAssignments.push({ ...assign, ownerId, ownerBanks });
@@ -505,33 +508,33 @@ export default function AddSiteForm() {
       // Step 4: Create Site-Owner Assignments (Handling multiple banks per owner)
       for (const assign of finalizedAssignments) {
         if (!assign.ownerId) continue;
-        
+
         const profileBanks = assign.ownerBanks || [];
         const uiBanks = assign.bankPayouts || [];
-        
-        for (const uiBank of uiBanks) {
-           if (uiBank.isDeleted) continue; // Don't assign deleted banks
-           
-           // Find the database bank _id for this ui record
-           const matchingProfileBank = profileBanks.find(pb => pb.accountNo === uiBank.accountNo);
-           
-           const assignPayload: any = {
-             siteId,
-             ownerId: assign.ownerId,
-             ownerMonthlyRent: Number(assign.ownerMonthlyRent) || 0,
-             bankAccount: matchingProfileBank?._id || uiBank.bankId
-           };
 
-           console.log("🚀 [Add Site] Linking Owner Bank to Site:", assignPayload);
-           const aRes = await fetch(`${API}/api/rent/owners/site-owner/assign`, {
-             method: "POST",
-             headers: authHeaders(),
-             body: JSON.stringify(assignPayload),
-           });
-           if (!aRes.ok) {
-             const errJson = await aRes.json().catch(() => ({}));
-             console.error("❌ [Add Site] Owner Assignment Failed:", errJson);
-           }
+        for (const uiBank of uiBanks) {
+          if (uiBank.isDeleted) continue; // Don't assign deleted banks
+
+          // Find the database bank _id for this ui record
+          const matchingProfileBank = profileBanks.find(pb => pb.accountNo === uiBank.accountNo);
+
+          const assignPayload: any = {
+            siteId,
+            ownerId: assign.ownerId,
+            ownerMonthlyRent: Number(assign.ownerMonthlyRent) || 0,
+            bankAccount: matchingProfileBank?._id || uiBank.bankId
+          };
+
+          console.log("🚀 [Add Site] Linking Owner Bank to Site:", assignPayload);
+          const aRes = await fetch(`${API}/api/rent/owners/site-owner/assign`, {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify(assignPayload),
+          });
+          if (!aRes.ok) {
+            const errJson = await aRes.json().catch(() => ({}));
+            console.error("❌ [Add Site] Owner Assignment Failed:", errJson);
+          }
         }
       }
 
@@ -889,14 +892,14 @@ export default function AddSiteForm() {
                                 onClick={() => removeBankPayout(idx, bIdx)}
                                 className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 rounded-md"
                               >
-                                <Trash2 size={12} />
+                                {/* <Trash2 size={12} /> */}
                               </button>
                               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <Field label="Account Holder"><Input placeholder="Account Holder" value={bank.accountHolder ?? ""} onChange={e => updateBankPayout(idx, bIdx, "accountHolder", e.target.value)} /></Field>
-                                <Field label="Account Number"><Input placeholder="Account Number" value={bank.accountNo ?? ""} onChange={e => updateBankPayout(idx, bIdx, "accountNo", e.target.value)} /></Field>
-                                <Field label="Bank Name"><Input placeholder="Bank Name" value={bank.bankName ?? ""} onChange={e => updateBankPayout(idx, bIdx, "bankName", e.target.value)} /></Field>
-                                <Field label="IFSC Code"><Input placeholder="IFSC Code" value={bank.ifsc ?? ""} onChange={e => updateBankPayout(idx, bIdx, "ifsc", e.target.value)} /></Field>
-                                <Field label="Branch Name"><Input placeholder="Branch Name" value={bank.branchName ?? ""} onChange={e => updateBankPayout(idx, bIdx, "branchName", e.target.value)} /></Field>
+                                <Field label="Account Holder" required><Input required placeholder="Account Holder" value={bank.accountHolder ?? ""} onChange={e => updateBankPayout(idx, bIdx, "accountHolder", e.target.value)} /></Field>
+                                <Field label="Account Number" required><Input required placeholder="Account Number" value={bank.accountNo ?? ""} onChange={e => updateBankPayout(idx, bIdx, "accountNo", e.target.value)} /></Field>
+                                <Field label="Bank Name" required><Input required placeholder="Bank Name" value={bank.bankName ?? ""} onChange={e => updateBankPayout(idx, bIdx, "bankName", e.target.value)} /></Field>
+                                <Field label="IFSC Code" required><Input required placeholder="IFSC Code" value={bank.ifsc ?? ""} onChange={e => updateBankPayout(idx, bIdx, "ifsc", e.target.value)} /></Field>
+                                <Field label="Branch Name" required><Input required placeholder="Branch Name" value={bank.branchName ?? ""} onChange={e => updateBankPayout(idx, bIdx, "branchName", e.target.value)} /></Field>
                                 <Field label="Notes" span2><Input placeholder="Notes" value={bank.details ?? ""} onChange={e => updateBankPayout(idx, bIdx, "details", e.target.value)} /></Field>
                               </div>
                             </div>

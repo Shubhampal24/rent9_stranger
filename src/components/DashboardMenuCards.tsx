@@ -56,7 +56,13 @@ export default function DashboardMenuCards() {
       if (!token) throw new Error("Authentication token not found");
 
       const statsResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/rental-dashboard/stats`
+        `${process.env.NEXT_PUBLIC_API_URL}/api/rent/dashboard/stats`,
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
 
       if (!statsResponse.ok) {
@@ -65,8 +71,8 @@ export default function DashboardMenuCards() {
 
       const statsJson = await statsResponse.json();
 
-      setSiteCount(Number(statsJson?.data?.totalSites) || 0);
-      setUpcomingPayments(Number(statsJson?.data?.upcomingRentSitesCount) || 0);
+      setSiteCount(Number(statsJson?.data?.sites?.total) || 0);
+      setUpcomingPayments(Number(statsJson?.data?.transactions?.pending) || 0);
 
 
       const rentResponse = await fetch(
