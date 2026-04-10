@@ -76,20 +76,20 @@ export default function UserDropdown() {
         onClick={toggleDropdown} 
         className="flex items-center text-gray-700 dark:text-gray-400 dropdown-toggle"
       >
-        <span className="hidden mr-3 overflow-hidden rounded-full h-11 w-11 sm:block">
+        <span className="hidden mr-2.5 overflow-hidden rounded-full h-9 w-9 sm:block">
            <Image
-             width={44}
-             height={44}
+             width={36}
+             height={36}
              src="/images/user/user.jpg"
              alt="User"
              priority
            />
          </span>
          
-         <span className="block mr-3 overflow-hidden rounded-full h-9 w-9 sm:hidden">
+         <span className="block mr-2.5 overflow-hidden rounded-full h-8 w-8 sm:hidden">
            <Image
-             width={36}
-             height={36}
+             width={32}
+             height={32}
              src="/images/user/user.jpg"
              alt="User"
              priority
@@ -123,7 +123,7 @@ export default function UserDropdown() {
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
-        className="absolute right-0 mt-[17px] flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
+        className="absolute right-0 mt-2 flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
       >
         <div className="flex items-start justify-between">
           <div>
