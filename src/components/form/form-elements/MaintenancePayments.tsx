@@ -121,7 +121,7 @@ export default function MaintenancePaymentForm({ siteId, owners = [], currentMon
     return (
         <div className="bg-white dark:bg-white/[0.03] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-600/20">
+                <div className="p-2 bg-orange-500 rounded-xl shadow-lg shadow-orange-500/20">
                     <Wrench className="text-white" size={20} />
                 </div>
                 <div>
@@ -137,7 +137,7 @@ export default function MaintenancePaymentForm({ siteId, owners = [], currentMon
                     <div className="space-y-1.5">
                         <Label htmlFor="monthYear" className="text-xs font-bold uppercase tracking-wider text-gray-400">Billing Month*</Label>
                         <div className="relative">
-                            <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 z-10" />
+                            <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-500 z-10" />
                             <ReactDatePicker
                                 selected={formData.monthYear ? new Date(formData.monthYear + "-01") : null}
                                 onChange={(date) => {
@@ -150,7 +150,7 @@ export default function MaintenancePaymentForm({ siteId, owners = [], currentMon
                                 dateFormat="MMMM yyyy"
                                 showMonthYearPicker
                                 placeholderText="Select Month"
-                                className="h-10 w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                                className="h-10 w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 dark:text-white"
                             />
                         </div>
                     </div>
@@ -227,7 +227,7 @@ export default function MaintenancePaymentForm({ siteId, owners = [], currentMon
                             value={formData.maintenanceDescription}
                             onChange={handleInputChange}
                             placeholder="Brief description..."
-                            className="w-full h-10 px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 bg-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white resize-none"
+                            className="w-full h-10 px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 bg-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 dark:text-white resize-none"
                         />
                     </div>
 
@@ -239,8 +239,8 @@ export default function MaintenancePaymentForm({ siteId, owners = [], currentMon
                                 htmlFor="image"
                                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-50 dark:bg-white/[0.03] border border-dashed border-gray-200 dark:border-white/[0.1] rounded-xl hover:bg-gray-100 dark:hover:bg-white/[0.05] transition-all cursor-pointer group"
                             >
-                                <Upload size={14} className="text-gray-400 group-hover:text-blue-500" />
-                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-blue-600 transition-colors">
+                                <Upload size={14} className="text-gray-400 group-hover:text-orange-500" />
+                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-orange-600 transition-colors">
                                     {imageFile ? imageFile.name : "Click to upload image or PDF"}
                                 </span>
                                 <input
@@ -268,7 +268,7 @@ export default function MaintenancePaymentForm({ siteId, owners = [], currentMon
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="px-6 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+                        className="px-6 py-2.5 bg-orange-500 text-white text-sm font-bold rounded-xl hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20 active:scale-95 disabled:opacity-50 disabled:active:scale-100"
                     >
                         {isSubmitting ? (
                             <div className="flex items-center gap-2">

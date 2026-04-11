@@ -202,13 +202,13 @@ export default function OwnerModal({ isOpen, onClose, onSave, initialData }: Own
                 <Landmark size={16} className="text-indigo-500" />
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Bank Accounts</span>
               </div>
-              <button
+              {/* <button
                 type="button"
                 onClick={addBankAccount}
                 className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 text-xs font-semibold rounded-lg transition-colors border border-indigo-100 dark:border-indigo-800/30"
               >
                 <Plus size={12} /> Add Bank
-              </button>
+              </button> */}
             </div>
 
             {form.bankAccounts.filter(b => !b.isDeleted).length === 0 ? (
@@ -223,9 +223,9 @@ export default function OwnerModal({ isOpen, onClose, onSave, initialData }: Own
                   if (bank.isDeleted) return null;
                   return (
                     <div key={idx} className="relative group p-4 border border-gray-100 dark:border-white/[0.08] rounded-xl bg-gray-50/50 dark:bg-white/[0.02]">
-                      <div className="absolute -top-2.5 -left-2 bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
-                        #{idx + 1}
-                      </div>
+                      {/* <div className="absolute -top-2.5 -left-2 bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm"> */}
+                        {/* #{idx + 1} */}
+                      {/* </div> */}
                       
                       <button
                         type="button"
