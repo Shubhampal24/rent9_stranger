@@ -327,7 +327,7 @@ export default function UpcomingRentSitesTable() {
         <Table className="min-w-full text-xs text-gray-600 dark:text-gray-300">
           <TableHeader className="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-transparent tracking-widest sticky top-0 z-10 border-b border-gray-100 dark:border-gray-800">
             <TableRow className="h-12">
-              <TableCell isHeader className="w-10 px-3 py-2"></TableCell>
+              <TableCell isHeader className="w-10 px-3 py-2">{null}</TableCell>
               <TableCell isHeader className="w-28 px-4 py-2 text-left">Code</TableCell>
               <TableCell isHeader className="w-40 px-4 py-2 text-left">Site Name</TableCell>
               <TableCell isHeader className="w-36 px-4 py-2 text-left">Owner</TableCell>
@@ -357,7 +357,7 @@ export default function UpcomingRentSitesTable() {
             ) : (
               filteredData.map((site) => (
                 <TableRow key={`${site.category}-${site.id}-${site.code}`} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">
-                  <TableCell className="w-10 px-3 py-3"></TableCell>
+                  <TableCell className="w-10 px-3 py-3">{null}</TableCell>
                   <TableCell className="w-28 px-4 py-3 font-bold text-gray-900 dark:text-white text-left">{site.code}</TableCell>
                   <TableCell className="w-40 px-4 py-3 text-left">
                     <span className="font-semibold text-gray-800 dark:text-white/90">{site.siteName}</span>
