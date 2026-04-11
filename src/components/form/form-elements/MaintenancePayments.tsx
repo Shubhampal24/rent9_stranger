@@ -10,6 +10,7 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import Button from "@/components/ui/button/Button";
+import CustomDatePicker from "@/components/form/date-picker";
 import ReactDatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -118,181 +119,171 @@ export default function MaintenancePaymentForm({ siteId, owners = [], currentMon
     };
 
     return (
-        <div className="relative group">
-            {/* Animated Gradient Background */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-3xl blur opacity-15 group-hover:opacity-25 transition duration-1000"></div>
+        <div className="bg-white dark:bg-white/[0.03] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-600/20">
+                    <Wrench className="text-white" size={20} />
+                </div>
+                <div>
+                    <h2 className="text-lg font-bold text-gray-800 dark:text-white leading-tight">Record Maintenance</h2>
+                    <p className="text-xs text-gray-400 mt-0.5">Payment details will be recorded in the general ledger</p>
+                </div>
+            </div>
 
-            <div className="relative bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/[0.06] shadow-2xl overflow-hidden shadow-emerald-500/5">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-emerald-600 to-teal-700 px-8 py-6">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md">
-                            <Wrench className="text-white" size={24} />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-black text-white uppercase tracking-tighter">Record Maintenance</h2>
-                            <p className="text-emerald-100 text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">General Upkeep & Repairs</p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    
+                    {/* Billing Month */}
+                    <div className="space-y-1.5">
+                        <Label htmlFor="monthYear" className="text-xs font-bold uppercase tracking-wider text-gray-400">Billing Month*</Label>
+                        <div className="relative">
+                            <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 z-10" />
+                            <ReactDatePicker
+                                selected={formData.monthYear ? new Date(formData.monthYear + "-01") : null}
+                                onChange={(date) => {
+                                    if (date) {
+                                        const year = date.getFullYear();
+                                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                                        setFormData(prev => ({ ...prev, monthYear: `${year}-${month}` }));
+                                    }
+                                }}
+                                dateFormat="MMMM yyyy"
+                                showMonthYearPicker
+                                placeholderText="Select Month"
+                                className="h-10 w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                            />
                         </div>
                     </div>
-                </div>
 
-                <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        
-                        {/* Billing Month */}
-                        <div className="space-y-1.5">
-                            <Label htmlFor="monthYear" className="text-xs font-bold uppercase tracking-wider text-gray-400">Billing Month*</Label>
-                            <div className="relative">
-                                <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500 z-10" />
-                                <ReactDatePicker
-                                    selected={formData.monthYear ? new Date(formData.monthYear + "-01") : null}
-                                    onChange={(date) => {
-                                        if (date) {
-                                            const year = date.getFullYear();
-                                            const month = String(date.getMonth() + 1).padStart(2, '0');
-                                            setFormData(prev => ({ ...prev, monthYear: `${year}-${month}` }));
-                                        }
-                                    }}
-                                    dateFormat="MMMM yyyy"
-                                    showMonthYearPicker
-                                    placeholderText="Select Month"
-                                    className="h-11 w-full pl-9 pr-3 py-2.5 text-sm font-semibold border-gray-100 dark:border-white/[0.05] bg-gray-50/50 focus:bg-white transition-all rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-white"
-                                />
-                            </div>
-                        </div>
+                    {/* Amount */}
+                    <div className="space-y-1.5">
+                        <Label htmlFor="paymentAmount" className="text-xs font-bold uppercase tracking-wider text-gray-400">Amount Paid*</Label>
+                        <Input
+                            type="number"
+                            id="paymentAmount"
+                            name="paymentAmount"
+                            value={formData.paymentAmount}
+                            onChange={handleInputChange}
+                            placeholder="0.00"
+                            required
+                            className="h-10 text-sm"
+                        />
+                    </div>
 
-                        {/* Amount */}
-                        <div className="space-y-1.5">
-                            <Label htmlFor="paymentAmount" className="text-xs font-bold uppercase tracking-wider text-gray-400">Amount Paid*</Label>
-                            <div className="relative">
-                                <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500" />
-                                <Input
-                                    type="number"
-                                    id="paymentAmount"
-                                    name="paymentAmount"
-                                    value={formData.paymentAmount}
-                                    onChange={handleInputChange}
-                                    placeholder="0.00"
-                                    className="h-11 pl-9 text-sm font-semibold border-gray-100 dark:border-white/[0.05] bg-gray-50/50 focus:bg-white transition-all rounded-xl"
-                                />
-                            </div>
-                        </div>
+                    {/* Status */}
+                    <div className="space-y-1.5">
+                        <Label htmlFor="paidStatus" className="text-xs font-bold uppercase tracking-wider text-gray-400">Status*</Label>
+                        <Select
+                            options={[
+                                { value: "paid", label: "Paid" },
+                                { value: "pending", label: "Pending" },
+                                { value: "partial", label: "Partially Paid" },
+                            ]}
+                            value={formData.paidStatus}
+                            onChange={(val) => setFormData(p => ({ ...p, paidStatus: val }))}
+                            className="h-10 text-sm"
+                        />
+                    </div>
 
-                        {/* Status */}
-                        <div className="space-y-1.5">
-                            <Label htmlFor="paidStatus" className="text-xs font-bold uppercase tracking-wider text-gray-400">Status*</Label>
-                            <Select
-                                options={[
-                                    { value: "paid", label: "Paid" },
-                                    { value: "pending", label: "Pending" },
-                                    { value: "partial", label: "Partial" },
-                                ]}
-                                value={formData.paidStatus}
-                                onChange={(val) => setFormData(p => ({ ...p, paidStatus: val }))}
-                                className="h-11 text-sm font-semibold border-gray-100 dark:border-white/[0.05] rounded-xl"
-                            />
-                        </div>
+                    {/* Payment Date */}
+                    <div className="space-y-1.5">
+                        <Label htmlFor="paymentDate" className="text-xs font-bold uppercase tracking-wider text-gray-400">Payment Date*</Label>
+                        <CustomDatePicker
+                            id="paymentDate"
+                            value={formData.paymentDate ? new Date(formData.paymentDate) : new Date()}
+                            onChange={(date: Date[]) => {
+                                if (date && date[0]) {
+                                    const d = date[0];
+                                    const formatted = [
+                                        d.getFullYear(),
+                                        String(d.getMonth() + 1).padStart(2, '0'),
+                                        String(d.getDate()).padStart(2, '0')
+                                    ].join('-');
+                                    setFormData(prev => ({ ...prev, paymentDate: formatted }));
+                                }
+                            }}
+                        />
+                    </div>
 
-                        {/* Payment Date */}
-                        <div className="space-y-1.5">
-                            <Label htmlFor="paymentDate" className="text-xs font-bold uppercase tracking-wider text-gray-400">Payment Date*</Label>
-                            <Input
-                                type="date"
-                                id="paymentDate"
-                                name="paymentDate"
-                                value={formData.paymentDate}
-                                onChange={handleInputChange}
-                                className="h-11 text-sm font-semibold border-gray-100 dark:border-white/[0.05] bg-gray-50/50 focus:bg-white transition-all rounded-xl"
-                            />
-                        </div>
+                    {/* UTR Number */}
+                    <div className="space-y-1.5">
+                        <Label htmlFor="utrNumber" className="text-xs font-bold uppercase tracking-wider text-gray-400">UTR / Ref Number</Label>
+                        <Input
+                            type="text"
+                            id="utrNumber"
+                            name="utrNumber"
+                            value={formData.utrNumber}
+                            onChange={handleInputChange}
+                            placeholder="Optional"
+                            className="h-10 text-sm"
+                        />
+                    </div>
 
-                        {/* Payment Type / Description Label */}
-                        <div className="space-y-1.5 md:col-span-2">
-                            <Label htmlFor="maintenanceDescription" className="text-xs font-bold uppercase tracking-wider text-gray-400">Maintenance Description*</Label>
-                            <div className="relative">
-                                <FileText size={14} className="absolute left-3 top-3 text-emerald-500" />
-                                <textarea
-                                    id="maintenanceDescription"
-                                    name="maintenanceDescription"
-                                    value={formData.maintenanceDescription}
-                                    onChange={handleInputChange}
-                                    placeholder="Describe the maintenance work (e.g., Plumbing repair, Painting...)"
-                                    className="w-full min-h-[44px] max-h-[120px] pl-9 pr-4 py-2.5 text-sm font-semibold border border-gray-100 dark:border-white/[0.05] bg-gray-50/50 dark:bg-white/[0.02] focus:bg-white transition-all rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                                />
-                            </div>
-                        </div>
+                    <div className="space-y-1.5 lg:col-span-1">
+                        <Label htmlFor="maintenanceDescription" className="text-xs font-bold uppercase tracking-wider text-gray-400">Maintenance Description*</Label>
+                        <textarea
+                            id="maintenanceDescription"
+                            name="maintenanceDescription"
+                            value={formData.maintenanceDescription}
+                            onChange={handleInputChange}
+                            placeholder="Brief description..."
+                            className="w-full h-10 px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 bg-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white resize-none"
+                        />
+                    </div>
 
-                        {/* UTR Number */}
-                        <div className="space-y-1.5">
-                            <Label htmlFor="utrNumber" className="text-xs font-bold uppercase tracking-wider text-gray-400">UTR / Ref Number</Label>
-                            <div className="relative">
-                                <CreditCard size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500" />
-                                <Input
-                                    type="text"
-                                    id="utrNumber"
-                                    name="utrNumber"
-                                    value={formData.utrNumber}
-                                    onChange={handleInputChange}
-                                    placeholder="Optional"
-                                    className="h-11 pl-9 text-sm font-semibold border-gray-100 dark:border-white/[0.05] bg-gray-50/50 focus:bg-white transition-all rounded-xl"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Proof of Payment */}
-                        <div className="space-y-1.5 md:col-span-2">
-                            <Label className="text-xs font-bold uppercase tracking-wider text-gray-400">Proof of Payment</Label>
-                            <div className="relative h-11">
+                    {/* Proof of Payment */}
+                    <div className="col-span-1 lg:col-span-3 space-y-1.5">
+                        <Label className="text-xs font-bold uppercase tracking-wider text-gray-400">Proof of Payment</Label>
+                        <div className="flex items-center gap-3">
+                            <label
+                                htmlFor="image"
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-50 dark:bg-white/[0.03] border border-dashed border-gray-200 dark:border-white/[0.1] rounded-xl hover:bg-gray-100 dark:hover:bg-white/[0.05] transition-all cursor-pointer group"
+                            >
+                                <Upload size={14} className="text-gray-400 group-hover:text-blue-500" />
+                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-blue-600 transition-colors">
+                                    {imageFile ? imageFile.name : "Click to upload image or PDF"}
+                                </span>
                                 <input
                                     type="file"
                                     id="image"
                                     onChange={handleFileChange}
                                     className="hidden"
                                 />
-                                <label
-                                    htmlFor="image"
-                                    className="flex items-center justify-center gap-2 h-full w-full border border-dashed border-emerald-200 dark:border-emerald-900/40 rounded-xl bg-emerald-50/30 dark:bg-emerald-500/5 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 cursor-pointer transition-all"
+                            </label>
+                            {imageFile && (
+                                <button 
+                                    type="button"
+                                    onClick={() => setImageFile(null)}
+                                    className="p-2 bg-red-50 dark:bg-red-900/20 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
                                 >
-                                    <Upload size={14} className="text-emerald-600" />
-                                    <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-tight">
-                                        {imageFile ? imageFile.name : "Click to upload bill image or PDF"}
-                                    </span>
-                                </label>
-                                {imageFile && (
-                                    <button 
-                                        type="button"
-                                        onClick={() => setImageFile(null)}
-                                        className="absolute -right-2 -top-1 p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors shadow-sm"
-                                    >
-                                        <Trash2 size={10} />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <div className="pt-4 border-t border-gray-50 dark:border-white/[0.04]">
-                        <Button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-[0.1em] text-xs shadow-xl shadow-emerald-600/20 active:scale-[0.98] transition-all disabled:opacity-50"
-                        >
-                            {isSubmitting ? (
-                                <span className="flex items-center gap-2">
-                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                    Processing Transaction...
-                                </span>
-                            ) : (
-                                <span className="flex items-center gap-2">
-                                    <CheckCircle2 size={16} />
-                                    Post Maintenance Transaction
-                                </span>
+                                    <Trash2 size={16} />
+                                </button>
                             )}
-                        </Button>
+                        </div>
                     </div>
-                </form>
-            </div>
+
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-white/[0.05]">
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="px-6 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+                    >
+                        {isSubmitting ? (
+                            <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                <span>Processing...</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <CheckCircle2 size={16} />
+                                <span>Post Transaction</span>
+                            </div>
+                        )}
+                    </button>
+                </div>
+            </form>
         </div>
     );
 }
