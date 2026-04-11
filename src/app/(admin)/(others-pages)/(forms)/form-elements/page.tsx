@@ -1,6 +1,6 @@
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import DefaultInputs from "@/components/form/form-elements/DefaultInputs";
-import { Toaster, toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { Metadata } from "next";
 import React from "react";
 
@@ -21,8 +21,6 @@ export default function FormElements() {
           <TextAreaInput />
           <InputStates /> */}
         </div>
-        {/* Toast container to render toasts */}
-        <Toaster position="top-right" />
         {/* <div className="space-y-6">
           <InputGroup />
           <FileInputExample />

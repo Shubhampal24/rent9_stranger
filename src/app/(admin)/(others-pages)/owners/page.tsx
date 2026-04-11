@@ -14,7 +14,6 @@ export default function OwnersPage() {
 
 
       <OwnerTable />
-      <Toaster position="top-right" />
     </div>
   );
 }

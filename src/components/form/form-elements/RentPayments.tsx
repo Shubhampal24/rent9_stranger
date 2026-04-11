@@ -55,7 +55,7 @@ export default function RentPaymentForm({ siteId, owners, currentMonthlyRent, ce
     const [formData, setFormData] = useState<RentPaymentFormData>({
         siteId: siteId,
         ownerId: '',
-        centreId: centreId || '',
+        centreId: typeof centreId === 'object' ? (centreId as any)._id : (centreId || ''),
         monthYear: '',
         paymentDate: new Date().toISOString().split('T')[0],
         paymentAmount: '',

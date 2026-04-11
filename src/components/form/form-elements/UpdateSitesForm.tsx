@@ -508,8 +508,7 @@ export default function UpdateSitesForm() {
         <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
           <SectionHeader icon={Building2} title="Centre Assignment" subtitle="Select the centre this site belongs to" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
-              <Label>Centre *</Label>
+            <Field label="Centre" required span2>
               <div className="relative">
                 <select
                   value={form.centreId}
@@ -524,7 +523,7 @@ export default function UpdateSitesForm() {
                 </select>
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><ChevronDownIcon /></span>
               </div>
-            </div>
+            </Field>
           </div>
         </div>
 
@@ -532,8 +531,8 @@ export default function UpdateSitesForm() {
         <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
           <SectionHeader icon={Building2} title="Basic Site Information" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Field label="Site Code"><Input type="text" value={form.code} onChange={setField("code")} placeholder="e.g. SITE-001" /></Field>
-            <Field label="Site Name *"><Input type="text" value={form.siteName} onChange={setField("siteName")} required /></Field>
+            <Field label="Site Code" required><Input type="text" value={form.code} onChange={setField("code")} placeholder="e.g. SITE-001" /></Field>
+            <Field label="Site Name" required><Input type="text" value={form.siteName} onChange={setField("siteName")} required /></Field>
             <Field label="Site Mobile No."><Input type="tel" value={form.siteMobileNo} onChange={setField("siteMobileNo")} /></Field>
             <Field label="Property Type">
               <div className="relative">

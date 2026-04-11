@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp, MapPin, Phone, CreditCard, Building2, Landmark, Globe, ArrowLeft, MoreVertical, UserCheck, Zap, Search } from 'lucide-react'
 import ElectricityPaymentForm from '@/components/form/form-elements/ElectricityPayments'
 import RentEscalationTable from '@/components/form/form-elements/RentEscalationTable'
-import { Toaster } from 'react-hot-toast'
 import Badge from '@/components/ui/badge/Badge'
 
 // ─── UI Helpers ───────────────────────────────────────────────────────────────
@@ -56,6 +55,7 @@ const Page = () => {
     const names = sites.map(site => {
       return site.addedBankName || 
              site.added_bank_name || 
+             site.owners?.[0]?.bankAccount?.[0]?.bankName || 
              site.owners?.[0]?.bankAccount?.bankName || 
              site.owners?.[0]?.ownerBankName || 
              '';
@@ -72,6 +72,7 @@ const Page = () => {
     
     const siteBank = site.addedBankName || 
                     site.added_bank_name || 
+                    site.owners?.[0]?.bankAccount?.[0]?.bankName || 
                     site.owners?.[0]?.bankAccount?.bankName || 
                     site.owners?.[0]?.ownerBankName || 
                     '';
@@ -157,7 +158,6 @@ const Page = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <Toaster position="top-center" />
 
       {!selectedSite ? (
         /* ─── SEARCH VIEW ─── */
@@ -270,7 +270,7 @@ const Page = () => {
                     <div className="flex items-center justify-between gap-1.5 text-sm text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <CreditCard size={13} className="flex-shrink-0" />
-                        <span className="truncate">{site.addedBankName || site.added_bank_name || (site.owners?.[0]?.bankAccount?.bankName || site.owners?.[0]?.ownerBankName) || '—'}</span>
+                        <span className="truncate">{site.addedBankName || site.added_bank_name || (site.owners?.[0]?.bankAccount?.[0]?.bankName || site.owners?.[0]?.bankAccount?.bankName || site.owners?.[0]?.ownerBankName) || '—'}</span>
                       </div>
                       <ChevronDown size={14} className="text-gray-300 group-hover:text-blue-400 flex-shrink-0 transition-colors" />
                     </div>
@@ -338,7 +338,7 @@ const Page = () => {
               <div className="xl:col-span-2 p-4 border-r border-gray-200 dark:border-white/[0.06]">
                 <ElectricityPaymentForm
                   siteId={selectedSite._id || selectedSite.id}
-                  centreId={siteDetails.centreId}
+                  centreId={typeof siteDetails.centreId === 'object' ? (siteDetails.centreId as any)._id : (siteDetails.centreId || '')}
                   owners={(siteDetails.owners || siteDetails.ownerId || []).map((owner: any) => ({
                     id: owner.ownerId?._id || owner._id || owner.id,
                     owner_name: owner.ownerId?.ownerName || owner.ownerName || owner.owner_name,
@@ -369,10 +369,13 @@ const Page = () => {
                         </div>
                         {expandedOwners[index] && (
                           <div className="px-4 pb-4 pt-1 border-t border-gray-100 dark:border-white/[0.05] grid grid-cols-2 md:grid-cols-3 gap-3">
-                            <InfoCard label="Contact" value={owner.ownerId?.mobileNo || owner.ownerMobileNo} icon={Phone} />
-                            <InfoCard label="Email" value={owner.ownerId?.email || owner.ownerEmail} icon={Globe} />
-                            <InfoCard label="Bank Name" value={owner.bankAccount?.bankName || owner.ownerBankName} icon={Landmark} />
-                            <InfoCard label="Account No" value={owner.bankAccount?.accountNo || owner.ownerAccountNo} icon={CreditCard} />
+                            <InfoCard label="Contact" value={owner.ownerId?.mobileNo || owner.ownerMobileNo || owner.owner_mobile_no} icon={Phone} />
+                            <InfoCard label="Account Holder" value={owner.bankAccount?.[0]?.accountHolder || owner.bankAccount?.accountHolder || owner.ownerAccountHolder} icon={UserCheck} />
+                            <InfoCard label="Bank Name" value={owner.bankAccount?.[0]?.bankName || owner.bankAccount?.bankName || owner.ownerBankName || owner.owner_bank_name} icon={Landmark} />
+                            <InfoCard label="Account No" value={owner.bankAccount?.[0]?.accountNo || owner.bankAccount?.accountNo || owner.ownerAccountNo || owner.owner_account_no} icon={CreditCard} />
+                            <InfoCard label="IFSC Code" value={owner.bankAccount?.[0]?.ifsc || owner.bankAccount?.ifsc || owner.ownerBankIfsc || owner.owner_bank_ifsc} />
+                            <InfoCard label="Branch" value={owner.bankAccount?.[0]?.branchName || owner.bankAccount?.branchName || owner.ownerBranchName} />
+                            {/* <InfoCard label="Owner Details" value={owner.ownerId?.ownerDetails || owner.owner_details || (owner as any).ownerDetails} /> */}
                           </div>
                         )}
                       </div>

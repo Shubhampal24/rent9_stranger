@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Toaster, toast } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import { Calendar, CreditCard, DollarSign, FileText, Upload, Trash2, CheckCircle2, LayoutDashboard, Wrench 
 
      
@@ -293,7 +293,6 @@ export default function MaintenancePaymentForm({ siteId, owners = [], currentMon
                     </div>
                 </form>
             </div>
-            <Toaster position="top-right" />
         </div>
     );
 }

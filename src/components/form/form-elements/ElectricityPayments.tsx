@@ -49,7 +49,7 @@ export default function ElectricityPaymentForm({ siteId, owners = [], currentMon
         electricityConsumerId: consumers[0]?._id || '',
         paymentType: 'Online',
         utrNumber: '',
-        centreId: centreId || ''
+        centreId: typeof centreId === 'object' ? (centreId as any)._id : (centreId || '')
     });
 
     // Auto-select consumer if available and not set

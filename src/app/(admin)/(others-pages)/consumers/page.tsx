@@ -18,7 +18,6 @@ export default function ConsumersPage() {
         <ConsumerTable />
       </div>
 
-      <Toaster position="top-right" />
     </div>
   );
 }
