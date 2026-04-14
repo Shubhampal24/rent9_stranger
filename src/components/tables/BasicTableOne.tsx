@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "../ui/table";
 import Badge from "../ui/badge/Badge";
+import { Plus, Edit, Eye } from "lucide-react";
 
 interface Owner {
   id: string;
@@ -81,7 +82,6 @@ export default function BasicTableOne() {
         if (!token) throw new Error("Authentication token not found");
 
         const url = `${process.env.NEXT_PUBLIC_API_URL}/api/rent/sites`;
-        console.log("Fetching sites from:", url);
         
         const response = await fetch(url, {
           headers: {
@@ -90,14 +90,12 @@ export default function BasicTableOne() {
           },
         });
 
-        console.log("BasicTableOne API Response Status:", response.status);
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log("BasicTableOne Fetched Data:", data);
         
         const siteList = data.data || data.sites || (Array.isArray(data) ? data : []);
         setSites(siteList);
@@ -127,7 +125,11 @@ export default function BasicTableOne() {
     })
     .sort((a, b) => (a.code ?? "").localeCompare(b.code ?? ""));
 
-  const navigateToSite = (siteId: string) => {
+  const navigateToTransactions = (siteId: string) => {
+    router.push(`/sites/${siteId}/transactions`);
+  };
+
+  const navigateToEdit = (siteId: string) => {
     router.push(`/sites/${siteId}`);
   };
 
@@ -142,7 +144,7 @@ export default function BasicTableOne() {
   return (
     <div className="space-y-2">
       {/* Search bar with sticky positioning */}
-      <div className="flex items-center px-1 sticky top-0 z-20 py-1 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between px-1 sticky top-0 z-20 py-2 border-b border-gray-200 dark:border-gray-700">
         <input
           type="text"
           placeholder="Search sites..."
@@ -150,6 +152,13 @@ export default function BasicTableOne() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full max-w-sm px-3 py-1.5 text-sm rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-white/[0.05] dark:border-white/[0.1] dark:text-white"
         />
+        <button
+          onClick={() => router.push("/form-elements")}
+          className="flex h-9 items-center gap-2 px-4 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 transition-all shadow-sm"
+        >
+          <Plus size={18} />
+          <span className="hidden sm:inline">Create Site</span>
+        </button>
       </div>
 
       {/* Table container with fixed height for scrolling */}
@@ -169,7 +178,8 @@ export default function BasicTableOne() {
                         { width: "w-40", label: "Location" },
                         { width: "w-32", label: "Owner" },
                         { width: "w-24", label: "Status" },
-                        { width: "w-24", label: "Action" },
+                        { width: "w-24", label: "Transaction" },
+                        { width: "w-24", label: "Actions" },
                       ].map(({ width, label }) => (
                         <TableCell
                           key={label}
@@ -218,9 +228,18 @@ export default function BasicTableOne() {
                           </Badge>
                         </TableCell>
                         <TableCell className="w-24 px-6 py-4 text-gray-900 dark:text-gray-100">
+                           <button
+                              onClick={() => navigateToTransactions(site._id || site.id)}
+                              className="px-3 py-1 text-xs font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-all shadow-sm"
+                              title="View Transactions"
+                          >
+                              HISTORY
+                          </button>
+                        </TableCell>
+                        <TableCell className="w-24 px-6 py-4 text-gray-900 dark:text-gray-100">
                           <button
-                            onClick={() => navigateToSite(site._id || site.id)}
-                            className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onClick={() => navigateToEdit(site._id || site.id)}
+                            className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-all shadow-sm"
                           >
                             View
                           </button>

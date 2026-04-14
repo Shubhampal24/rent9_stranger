@@ -133,8 +133,6 @@ export default function UsersTable() {
 
 
   const handleSave = () => {
-    // Handle save logic here - would need to implement API call to update user
-    console.log("Saving changes for user:", selectedUser);
     closeModal();
   };
 

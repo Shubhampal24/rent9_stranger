@@ -87,7 +87,6 @@ export default function UserInfoCard() {
           bio: data.bio || "",
         };
 
-        console.log("Processed user details:", updatedData);
         setUserDetails(updatedData);
         setEditUserDetails(updatedData);
       } catch (error) {

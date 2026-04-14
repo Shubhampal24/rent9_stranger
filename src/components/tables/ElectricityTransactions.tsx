@@ -30,7 +30,6 @@ const SiteOwnerCell = ({ siteId }: { siteId?: string }) => {
                 });
                 if (!res.ok) throw new Error();
                 const json = await res.json();
-                console.log(`Fetched site ${siteId} for owner name (Elec):`, json);
                 const siteData = json.data || json;
                 if (siteData.owners && siteData.owners.length > 0) {
                     const names = siteData.owners.map((o: any) => o.ownerId?.ownerName || "Unknown").join(", ");
@@ -194,7 +193,6 @@ export default function ElectricityTransactionsTable() {
             if (filters.paid_status) queryParams.append("paidStatus", filters.paid_status);
 
             const url = `${process.env.NEXT_PUBLIC_API_URL}/api/rent/electricityTransactions/site/all${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-            console.log("Fetching electricity transactions from:", url);
 
             const response = await fetch(url, {
                 headers: {
@@ -203,15 +201,12 @@ export default function ElectricityTransactionsTable() {
                 },
             });
 
-            console.log("Electricity Transactions API Response Status:", response.status);
 
             if (!response.ok) {
-                console.error("Electricity Transactions Error Response:", response);
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const json = await response.json();
-            console.log("Electricity Transactions Data:", json);
 
             // Support both { data: [...] } and plain array responses
             const dataArray = json.data || (Array.isArray(json) ? json : (json?.data || []));
@@ -308,10 +303,8 @@ export default function ElectricityTransactionsTable() {
     };
 
     const handleUpdateClick = async (transaction: ElectricityTransaction) => {
-        console.log("Opening update modal for transaction:", transaction);
         setSelectedTransaction(transaction);
         const siteId = typeof transaction.siteId === 'object' ? transaction.siteId?._id : transaction.siteId;
-        console.log("Extracted siteId for consumer fetch:", siteId);
 
         // Determine the consumer ID robustly
         const currentConsumerId = transaction.electricityConsumerId?._id ||
@@ -361,7 +354,6 @@ export default function ElectricityTransactionsTable() {
                         return [...missing, ...fetchedConsumers];
                     });
 
-                    console.log("Updated consumers for site:", fetchedConsumers);
                 }
             } catch (err) {
                 console.error("Error fetching consumers:", err);
@@ -433,11 +425,6 @@ export default function ElectricityTransactionsTable() {
                 formData.append("removeImage", "true");
             }
 
-            // ✅ DEBUG LOG PAYLOAD
-            console.log("🚀 [Electricity Transaction] Submitting Update Payload:");
-            for (let [key, value] of (formData as any).entries()) {
-                console.log(`${key}:`, value instanceof File ? `File: ${value.name}` : value);
-            }
 
             const id = selectedTransaction._id || selectedTransaction.id;
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rent/siteTransaction/${id}`, {

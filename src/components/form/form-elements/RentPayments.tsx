@@ -137,14 +137,8 @@ export default function RentPaymentForm({ siteId, owners, currentMonthlyRent, ce
                 form.append('image', imageFile);
             }
 
-            // Log the payload for debugging
-            console.log("Submitting Rent Transaction Payload:");
-            for (const [key, value] of form.entries()) {
-                console.log(`${key}:`, value instanceof File ? `File: ${value.name}` : value);
-            }
 
             const url = `${process.env.NEXT_PUBLIC_API_URL}/api/rent/siteTransaction/rent-transaction`;
-            console.log("Submitting to URL:", url);
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -155,9 +149,7 @@ export default function RentPaymentForm({ siteId, owners, currentMonthlyRent, ce
                 body: form
             });
 
-            console.log("API Status:", response.status);
             const data = await response.json();
-            console.log("API Response Data:", data);
 
             if (!response.ok) {
                 switch (response.status) {

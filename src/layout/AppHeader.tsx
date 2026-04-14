@@ -40,14 +40,9 @@ export const navItems: NavItem[] = [
     path: "/dashboard",
   },
   {
+    name: "Create Site",
     icon: <PlusCircleIcon size={12} />,
-    name: "Create",
-    subtitle: "site/owner/consumer",
-    subItems: [
-      { name: "Add Site", path: "/form-elements", icon: <Plus size={12} /> },
-      { name: "Add Owner", path: "/owners", icon: <UserPlus size={12} /> },
-      { name: "Add Consumer", path: "/consumers", icon: <ZapIcon size={12} /> },
-    ],
+    path: "/form-elements",
   },
   {
     icon: <CreditCard size={12} />,

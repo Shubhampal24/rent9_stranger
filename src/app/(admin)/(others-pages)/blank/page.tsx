@@ -105,7 +105,6 @@ const Page = () => {
         if (!token) throw new Error("Token not found in localStorage")
 
         const url = `${process.env.NEXT_PUBLIC_API_URL}/api/rent/sites`;
-        console.log("Fetching all sites from:", url);
 
         const res = await fetch(url, {
           headers: {
@@ -114,18 +113,15 @@ const Page = () => {
           },
         })
 
-        console.log("API Response Status:", res.status)
 
         if (!res.ok) {
           throw new Error(`HTTP error! Status: ${res.status}`)
         }
 
         const data = await res.json()
-        console.log("Fetched sites JSON data:", data)
 
         // Standard check for data location (some APIs return data.data, some data.sites)
         const siteList = data.data || data.sites || (Array.isArray(data) ? data : [])
-        console.log("Extracted siteList:", siteList)
 
         setSites(siteList)
         setError(null)
@@ -160,7 +156,6 @@ const Page = () => {
       const token = localStorage.getItem("token")
       if (!token) throw new Error("Token not found in localStorage")
 
-      console.log("Fetching site details for ID:", siteId, "from:", `${process.env.NEXT_PUBLIC_API_URL}/api/rent/sites/${siteId}`);
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rent/sites/${siteId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -168,18 +163,15 @@ const Page = () => {
         },
       })
 
-      console.log("Site Details API Response Status:", res.status)
 
       if (!res.ok) {
         throw new Error(`HTTP error! Status: ${res.status}`)
       }
 
       const data = await res.json()
-      console.log("Fetched site details JSON data:", data)
 
       // Unwrap data from data.data or data.data (depends on backend structure)
       const details = data.data || data
-      console.log("Unwrapped site details:", details)
 
       setSiteDetails(details)
 
@@ -202,7 +194,6 @@ const Page = () => {
   }
 
   const handleSiteClick = async (site: any) => {
-    console.log("Rent Site Clicked:", site);
     setSelectedSite(site)
     await fetchSiteDetails(site._id || site.id)
   }

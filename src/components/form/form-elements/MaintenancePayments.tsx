@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
-import { Calendar, CreditCard, DollarSign, FileText, Upload, Trash2, CheckCircle2, LayoutDashboard, Wrench 
+import {
+    Calendar, CreditCard, DollarSign, FileText, Upload, Trash2, CheckCircle2, LayoutDashboard, Wrench
 
-     
- } from "lucide-react";
+
+} from "lucide-react";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
@@ -79,11 +80,6 @@ export default function MaintenancePaymentForm({ siteId, owners = [], currentMon
             data.append("image", imageFile);
         }
 
-        // Debug payload
-        console.log("🚀 [Maintenance Transaction] Sending Payload:");
-        for (let [key, value] of (data as any).entries()) {
-            console.log(`${key}:`, value instanceof File ? `File: ${value.name}` : value);
-        }
 
         try {
             const token = localStorage.getItem("token");
@@ -96,7 +92,6 @@ export default function MaintenancePaymentForm({ siteId, owners = [], currentMon
             });
 
             const result = await res.json();
-            console.log("📥 [Maintenance Transaction] Server Response:", result);
 
             if (res.ok) {
                 toast.success("Maintenance transaction recorded successfully!");
@@ -132,7 +127,7 @@ export default function MaintenancePaymentForm({ siteId, owners = [], currentMon
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    
+
                     {/* Billing Month */}
                     <div className="space-y-1.5">
                         <Label htmlFor="monthYear" className="text-xs font-bold uppercase tracking-wider text-gray-400">Billing Month*</Label>
@@ -251,7 +246,7 @@ export default function MaintenancePaymentForm({ siteId, owners = [], currentMon
                                 />
                             </label>
                             {imageFile && (
-                                <button 
+                                <button
                                     type="button"
                                     onClick={() => setImageFile(null)}
                                     className="p-2 bg-red-50 dark:bg-red-900/20 text-red-600 rounded-lg hover:bg-red-100 transition-colors"

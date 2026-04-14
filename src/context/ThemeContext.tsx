@@ -20,8 +20,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     // This code will only run on the client side
-    const savedTheme = localStorage.getItem("theme") as Theme | null;
-    const initialTheme = savedTheme || "dark"; // Default to dark theme
+    const initialTheme = "dark"; // Force dark theme as default
 
     setTheme(initialTheme);
     setIsInitialized(true);
@@ -39,7 +38,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [theme, isInitialized]);
 
   const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
+    // Theme is forced to dark, toggle is disabled
   };
 
   return (

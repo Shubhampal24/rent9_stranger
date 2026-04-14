@@ -343,7 +343,6 @@ export default function AddSiteForm() {
   const handleNewOwnerSaved = async (formData: any) => {
     try {
       // 1. Create Owner Profile with all bank accounts in one call
-      console.log("🚀 [Add Site] Creating Owner Profile via Modal:", formData);
       const res = await fetch(`${API}/api/rent/owners/`, {
         method: "POST",
         headers: authHeaders(),
@@ -420,7 +419,6 @@ export default function AddSiteForm() {
         }
 
         if (!ownerId && assign.ownerName) {
-          console.log("🚀 [Add Site] Creating New Owner Profile with multiple banks:", JSON.stringify(ownerPayload, null, 2));
 
           const ownerRes = await fetch(`${API}/api/rent/owners/`, {
             method: "POST",
@@ -432,12 +430,8 @@ export default function AddSiteForm() {
             const createdOwner = ownerJson.data || ownerJson;
             ownerId = createdOwner._id;
             ownerBanks = createdOwner.bankAccounts || [];
-          } else {
-            const errJson = await ownerRes.json().catch(() => ({}));
-            console.error("❌ [Add Site] Owner Creation Failed:", errJson);
           }
         } else if (ownerId) {
-          console.log("🚀 [Add Site] Syncing Existing Owner Profile:", JSON.stringify(ownerPayload, null, 2));
           await fetch(`${API}/api/rent/owners/${ownerId}`, {
             method: "PUT",
             headers: authHeaders(),
@@ -449,6 +443,7 @@ export default function AddSiteForm() {
           if (getRes.ok) {
             const getJson = await getRes.json();
             ownerBanks = (getJson.data || getJson).bankAccounts || [];
+
           }
         }
         finalizedAssignments.push({ ...assign, ownerId, ownerBanks });
@@ -463,7 +458,6 @@ export default function AddSiteForm() {
             consumerName: c.consumerName,
             electricityProvider: c.electricityProvider
           };
-          console.log("🚀 [Add Site] Creating Consumer Profile:", consumerPayload);
 
           const cRes = await fetch(`${API}/api/rent/siteConsumer`, {
             method: "POST",
@@ -487,7 +481,6 @@ export default function AddSiteForm() {
       const sitePayload: any = {};
       Object.entries(form).forEach(([k, v]) => { if (v !== "") sitePayload[k] = v; });
 
-      console.log("🚀 [Add Site] Submitting Site Payload:", sitePayload);
 
       const siteRes = await fetch(`${API}/api/rent/sites/`, {
         method: "POST",
@@ -496,14 +489,13 @@ export default function AddSiteForm() {
       });
       const siteJson = await siteRes.json();
       if (!siteRes.ok) {
-        console.error("❌ [Add Site] Site Creation Failed:", siteJson);
         throw new Error(siteJson.message ?? "Failed to create site");
       }
 
       // Robust siteId extraction
       const siteId = siteJson.data?._id || siteJson.site?._id || siteJson._id;
-      console.log("✅ [Add Site] Site Created successfully. ID:", siteId);
 
+      // Step 4: Perform Assignments
       // Step 4: Perform Assignments using the new siteId
       // Step 4: Create Site-Owner Assignments (Handling multiple banks per owner)
       for (const assign of finalizedAssignments) {
@@ -525,7 +517,6 @@ export default function AddSiteForm() {
             bankAccount: matchingProfileBank?._id || uiBank.bankId
           };
 
-          console.log("🚀 [Add Site] Linking Owner Bank to Site:", assignPayload);
           const aRes = await fetch(`${API}/api/rent/owners/site-owner/assign`, {
             method: "POST",
             headers: authHeaders(),
@@ -541,7 +532,6 @@ export default function AddSiteForm() {
       // B. Consumers
       for (const consumerId of consumerIds) {
         const assignPayload = { siteId, consumerId };
-        console.log("🚀 [Add Site] Assigning Consumer to Site:", assignPayload);
 
         const aRes = await fetch(`${API}/api/rent/siteConsumer/assign`, {
           method: "POST",
@@ -588,7 +578,7 @@ export default function AddSiteForm() {
   );
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+    <div className="w-full max-w-[1600px] mx-auto space-y-6 pb-12 px-4 sm:px-6">
       {/* Page Header (Cancel/Add) removed as per user request */}
 
       {/* ── Page Hero ── */}
@@ -598,11 +588,13 @@ export default function AddSiteForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* ── Section: Centre Assignment ── */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+          <div className="space-y-6">
+            {/* ── Section: Centre Assignment ── */}
         <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
           <SectionHeader icon={Building2} title="Centre Assignment" subtitle="Select the centre this site belongs to" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Centre" required span2>
+            <Field label="Centre" required>
               <div className="relative">
                 <select
                   value={form.centreId}
@@ -650,13 +642,13 @@ export default function AddSiteForm() {
               </div>
             </Field>
             <Field label="Payment Day"><Input type="number" value={form.paymentDay} onChange={setField("paymentDay")} placeholder="e.g. 5" /></Field>
-            <Field label="Property Location" span2><Input type="text" value={form.propertyLocation} onChange={setField("propertyLocation")} placeholder="Area/locality" /></Field>
-            <Field label="Property Address" span2><Input type="text" value={form.propertyAddress} onChange={setField("propertyAddress")} placeholder="Full address" /></Field>
+            <Field label="Property Location"><Input type="text" value={form.propertyLocation} onChange={setField("propertyLocation")} placeholder="Area/locality" /></Field>
+            <Field label="Property Address"><Input type="text" value={form.propertyAddress} onChange={setField("propertyAddress")} placeholder="Full address" /></Field>
             <Field label="City"><Input type="text" value={form.city} onChange={setField("city")} placeholder="City" /></Field>
             <Field label="Pincode"><Input type="text" value={form.pincode} onChange={setField("pincode")} placeholder="6-digit pincode" /></Field>
             <Field label="Area Size"><Input type="number" value={form.areaSize} onChange={setField("areaSize")} placeholder="Size" /></Field>
             <Field label="Unit (sq.ft / sq.m)"><Input type="text" value={form.unit} onChange={setField("unit")} placeholder="sq.ft" /></Field>
-            <Field label="Google Maps Link" span2><Input type="url" value={form.glocationLink} onChange={setField("glocationLink")} placeholder="https://maps.google.com/..." /></Field>
+            <Field label="Google Maps Link"><Input type="url" value={form.glocationLink} onChange={setField("glocationLink")} placeholder="https://maps.google.com/..." /></Field>
             <Field label="Website Link"><Input type="url" value={form.websiteLink} onChange={setField("websiteLink")} placeholder="https://" /></Field>
             <Field label="Google Drive Link"><Input type="url" value={form.gdriveLink} onChange={setField("gdriveLink")} placeholder="https://drive.google.com/..." /></Field>
             <Field label="Managed By"><Input type="text" value={form.managedBy} onChange={setField("managedBy")} placeholder="Manager name" /></Field>
@@ -672,7 +664,7 @@ export default function AddSiteForm() {
             <Field label="Tenant Name"><Input type="text" value={form.tenantName} onChange={setField("tenantName")} placeholder="Tenant / organisation name" /></Field>
             <Field label="Tenant Mobile"><Input type="tel" value={form.tenantMobileNo} onChange={setField("tenantMobileNo")} placeholder="Mobile number" /></Field>
             <Field label="Tenant Email"><Input type="email" value={form.tenantEmail} onChange={setField("tenantEmail")} placeholder="Email" /></Field>
-            <Field label="Tenant Address" span2><Input type="text" value={form.tenantAddress} onChange={setField("tenantAddress")} placeholder="Address" /></Field>
+            <Field label="Tenant Address"><Input type="text" value={form.tenantAddress} onChange={setField("tenantAddress")} placeholder="Address" /></Field>
           </div>
         </div>
 
@@ -703,6 +695,9 @@ export default function AddSiteForm() {
         </div>
 
         {/* ── Section: Agreement Details ── */}
+          </div>
+          <div className="space-y-6">
+            {/* ── Section: Agreement Details ── */}
         <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
           <SectionHeader icon={FileText} title="Agreement Details" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -911,6 +906,8 @@ export default function AddSiteForm() {
               ))
             )}
           </div>
+        </div>
+        </div>
         </div>
 
         {/* ── Submit ── */}

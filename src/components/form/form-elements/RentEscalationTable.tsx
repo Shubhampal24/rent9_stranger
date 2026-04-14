@@ -35,7 +35,6 @@ export default function RentEscalationTable({ site }: { site: SiteProps }) {
 
     // Check if all required values are present and valid
     if (isNaN(baseRent) || isNaN(years) || isNaN(escalationRate) || !agreementDate) {
-      console.log('Missing or invalid values for escalation calculation');
       return;
     }
 

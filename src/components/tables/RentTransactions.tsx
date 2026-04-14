@@ -125,7 +125,6 @@ export default function RentTransactionsTable() {
       });
 
       const endpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/rent/${baseUrl}${queryParams.toString() ? `?${queryParams.toString()}&` : '?'}t=${Date.now()}`;
-      console.log("Fetching transactions from:", endpoint);
       const response = await fetch(
         endpoint,
         {
@@ -354,10 +353,6 @@ export default function RentTransactionsTable() {
         formData.append("removeImage", "true");
       }
 
-      console.log("🚀 [Rent Transaction] Submitting Update Payload:");
-      for (const [key, value] of (formData as any).entries()) {
-          console.log(`${key}:`, value instanceof File ? `File: ${value.name}` : value);
-      }
 
       const response = await fetch(endpoint, {
         method: "PUT",

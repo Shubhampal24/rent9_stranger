@@ -149,7 +149,7 @@ export default function UpdateSitesForm() {
       setAllOwners(oJson.data || []);
 
       const siteData = sJson.data || sJson;
-      console.log("🚀 [Update Site] Fetched Site Response:", siteData);
+
 
       // Map Core Fields
       const newForm: any = { ...INITIAL_FORM };
@@ -369,7 +369,6 @@ export default function UpdateSitesForm() {
 
         if (!ownerId && assign.ownerName) {
           // Create New Owner
-          console.log("🚀 [Update Site] Creating New Owner Profile with multiple banks:", JSON.stringify(ownerPayload, null, 2));
           const oRes = await fetch(`${API}/api/rent/owners/`, {
             method: "POST",
             headers: authHeaders(),
@@ -383,7 +382,6 @@ export default function UpdateSitesForm() {
           }
         } else if (ownerId) {
           // Update Existing Owner Profile
-          console.log("🚀 [Update Site] Syncing Owner Profile:", JSON.stringify(ownerPayload, null, 2));
           await fetch(`${API}/api/rent/owners/${ownerId}`, {
             method: "PUT",
             headers: authHeaders(),
@@ -489,7 +487,7 @@ export default function UpdateSitesForm() {
   );
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+    <div className="w-full max-w-[1600px] mx-auto space-y-6 pb-12 px-4 sm:px-6">
       {/* ── Page Hero ── */}
       <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-5 text-white shadow-lg shadow-indigo-500/20">
         <div className="flex items-center justify-between">
@@ -504,11 +502,13 @@ export default function UpdateSitesForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* ── Section: Centre Assignment ── */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+          <div className="space-y-6">
+            {/* ── Section: Centre Assignment ── */}
         <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
           <SectionHeader icon={Building2} title="Centre Assignment" subtitle="Select the centre this site belongs to" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Centre" required span2>
+            <Field label="Centre" required>
               <div className="relative">
                 <select
                   value={form.centreId}
@@ -547,13 +547,13 @@ export default function UpdateSitesForm() {
               </div>
             </Field>
             <Field label="Payment Day"><Input type="number" value={form.paymentDay} onChange={setField("paymentDay")} /></Field>
-            <Field label="Property Location" span2><Input type="text" value={form.propertyLocation} onChange={setField("propertyLocation")} /></Field>
-            <Field label="Property Address" span2><Input type="text" value={form.propertyAddress} onChange={setField("propertyAddress")} /></Field>
+            <Field label="Property Location"><Input type="text" value={form.propertyLocation} onChange={setField("propertyLocation")} /></Field>
+            <Field label="Property Address"><Input type="text" value={form.propertyAddress} onChange={setField("propertyAddress")} /></Field>
             <Field label="City"><Input type="text" value={form.city} onChange={setField("city")} /></Field>
             <Field label="Pincode"><Input type="text" value={form.pincode} onChange={setField("pincode")} /></Field>
             <Field label="Area Size"><Input type="number" value={form.areaSize} onChange={setField("areaSize")} /></Field>
             <Field label="Unit (sq.ft / sq.m)"><Input type="text" value={form.unit} onChange={setField("unit")} /></Field>
-            <Field label="Google Maps Link" span2><Input type="url" value={form.glocationLink} onChange={setField("glocationLink")} /></Field>
+            <Field label="Google Maps Link"><Input type="url" value={form.glocationLink} onChange={setField("glocationLink")} /></Field>
             <Field label="Website Link"><Input type="url" value={form.websiteLink} onChange={setField("websiteLink")} /></Field>
             <Field label="Google Drive Link"><Input type="url" value={form.gdriveLink} onChange={setField("gdriveLink")} /></Field>
             <Field label="Managed By"><Input type="text" value={form.managedBy} onChange={setField("managedBy")} /></Field>
@@ -569,7 +569,7 @@ export default function UpdateSitesForm() {
             <Field label="Tenant Name"><Input type="text" value={form.tenantName} onChange={setField("tenantName")} /></Field>
             <Field label="Tenant Mobile"><Input type="tel" value={form.tenantMobileNo} onChange={setField("tenantMobileNo")} /></Field>
             <Field label="Tenant Email"><Input type="email" value={form.tenantEmail} onChange={setField("tenantEmail")} /></Field>
-            <Field label="Tenant Address" span2><Input type="text" value={form.tenantAddress} onChange={setField("tenantAddress")} /></Field>
+            <Field label="Tenant Address"><Input type="text" value={form.tenantAddress} onChange={setField("tenantAddress")} /></Field>
           </div>
         </div>
 
@@ -600,6 +600,9 @@ export default function UpdateSitesForm() {
         </div>
 
         {/* ── Section: Agreement Details ── */}
+          </div>
+          <div className="space-y-6">
+            {/* ── Section: Agreement Details ── */}
         <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.06] rounded-2xl p-6 shadow-sm">
           <SectionHeader icon={FileText} title="Agreement Details" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -757,7 +760,7 @@ export default function UpdateSitesForm() {
                                 <Field label="Bank Name" required><Input required placeholder="Bank Name" value={bank.bankName} onChange={e => updateBankPayout(idx, bIdx, "bankName", e.target.value)} /></Field>
                                 <Field label="IFSC Code" required><Input required placeholder="IFSC Code" value={bank.ifsc} onChange={e => updateBankPayout(idx, bIdx, "ifsc", e.target.value)} /></Field>
                                 <Field label="Branch Name" required><Input required placeholder="Branch Name" value={bank.branchName} onChange={e => updateBankPayout(idx, bIdx, "branchName", e.target.value)} /></Field>
-                                <Field label="Notes" span2><Input placeholder="Notes" value={bank.details} onChange={e => updateBankPayout(idx, bIdx, "details", e.target.value)} /></Field>
+                                <Field label="Notes"><Input placeholder="Notes" value={bank.details} onChange={e => updateBankPayout(idx, bIdx, "details", e.target.value)} /></Field>
                               </div>
                             </div>
                           );
@@ -771,7 +774,10 @@ export default function UpdateSitesForm() {
           </div>
         </div>
 
-        {/* ── Footer ── */}
+        </div>
+        </div>
+
+        {/* ── Submit ── */}
         <div className="flex items-center justify-between border-t border-gray-100 dark:border-white/[0.05] pt-6">
           <p />
           <button type="submit" disabled={submitting} className="flex items-center gap-2 px-8 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-indigo-500/20">

@@ -13,7 +13,7 @@ import {
 } from "../ui/table";
 import Badge from "../ui/badge/Badge";
 
-import { Pencil, Trash2, Search, Plus, Calendar, MapPin, Building2, User } from "lucide-react";
+import { Pencil, Trash2, Search, Plus, Calendar, MapPin, Building2, User, Minus } from "lucide-react";
 import Button from "../ui/button/Button";
 
 interface MasterData {
@@ -27,9 +27,8 @@ interface MasterData {
   status: string;
   lineTrack: string;
   location: string;
-  mobile1: string;
-  mobile2: string;
-  mobile3: string;
+  ownerName: string;
+  mobileNumbers: string[]; // Ensure this matches backend field
   email: string;
   address: string;
   agreement: string;
@@ -51,7 +50,18 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave, mo
 
   useEffect(() => {
     if (data) {
-      setFormData({ ...data });
+      // Handle legacy data where mobile might be missing or not an array
+      let mobiles = data.mobileNumbers || (data as any).mobile;
+      if (!mobiles || !Array.isArray(mobiles)) {
+        // @ts-ignore - checking for legacy fields
+        mobiles = [data.mobile1 || ""].filter(Boolean);
+        // @ts-ignore
+        if (data.mobile2) mobiles.push(data.mobile2);
+        // @ts-ignore
+        if (data.mobile3) mobiles.push(data.mobile3);
+        if (mobiles.length === 0) mobiles = [""];
+      }
+      setFormData({ ...data, mobileNumbers: mobiles });
     } else if (mode === "add") {
       setFormData({
         srNo: 0,
@@ -63,9 +73,8 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave, mo
         status: "Open",
         lineTrack: "",
         location: "",
-        mobile1: "",
-        mobile2: "",
-        mobile3: "",
+        ownerName: "",
+        mobileNumbers: [""],
         email: "",
         address: "",
         agreement: "",
@@ -79,6 +88,22 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave, mo
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+
+  const handleMobileChange = (index: number, value: string) => {
+    const newMobiles = [...(formData.mobileNumbers || [""])];
+    newMobiles[index] = value;
+    setFormData({ ...formData, mobileNumbers: newMobiles });
+  };
+
+  const addMobileField = () => {
+    setFormData({ ...formData, mobileNumbers: [...(formData.mobileNumbers || [""]), ""] });
+  };
+
+  const removeMobileField = (index: number) => {
+    const newMobiles = (formData.mobileNumbers || [""]).filter((_, i) => i !== index);
+    if (newMobiles.length === 0) newMobiles.push("");
+    setFormData({ ...formData, mobileNumbers: newMobiles });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -111,6 +136,15 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave, mo
               <input
                 name="spaCode"
                 value={formData.spaCode}
+                onChange={handleChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Owner Name</label>
+              <input
+                name="ownerName"
+                value={formData.ownerName}
                 onChange={handleChange}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
               />
@@ -177,6 +211,40 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave, mo
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
               />
             </div>
+            <div className="col-span-1 sm:col-span-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Mobile Numbers</label>
+                <button
+                  type="button"
+                  onClick={addMobileField}
+                  className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  <Plus size={14} /> Add Number
+                </button>
+              </div>
+              <div className="space-y-2">
+                {(formData.mobileNumbers || [""]).map((num, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      value={num}
+                      onChange={(e) => handleMobileChange(index, e.target.value)}
+                      placeholder={`Mobile ${index + 1}`}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                    />
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => removeMobileField(index)}
+                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                      >
+                        <Minus size={18} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Mobile 1, 2, 3 fields commented out
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Mobile 1</label>
               <input
@@ -204,6 +272,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, data, onSave, mo
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
               />
             </div>
+            */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
               <input
@@ -299,17 +368,12 @@ export default function MasterTable() {
           "Content-Type": "application/json",
         },
       });
-      console.log("Status:", response.status);
-      console.log("Fetch response:", response);
-      console.log("Fetch response status:", response.status);
-      console.log("Status:", response.status);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("data",data)
       
       // Inject SR NO if not provided by backend to ensure table is populated and CRUD logic works
       const mappedData = (data.data || []).map((item: any, index: number) => ({
@@ -337,6 +401,8 @@ export default function MasterTable() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Authentication token not found");
 
+      console.log("Master Add Payload:", newData);
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/rent/master/`,
         {
@@ -345,7 +411,7 @@ export default function MasterTable() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(newData) // Use flat object
+          body: JSON.stringify(newData)
         }
       );
 
@@ -387,6 +453,8 @@ export default function MasterTable() {
       // Use _id for the API call
       const recordId = updatedData._id;
 
+      console.log("Master Update Payload (ID: " + recordId + "):", updatedData);
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/rent/master/${recordId}`,
         {
@@ -395,19 +463,16 @@ export default function MasterTable() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(updatedData), // Use flat object
+          body: JSON.stringify(updatedData),
         }
       );
 
-      console.log("API Response Status:", response);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const result = await response.json();
-      console.log("API Response :", result);
-      console.log("API Response Status :", response.status)
 
       // Update the local data
       setMasterData((prevData) =>
@@ -456,8 +521,6 @@ export default function MasterTable() {
         }
       );
 
-      console.log("API Response :", response);
-      console.log("API Response Status :", response.status);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -511,27 +574,22 @@ export default function MasterTable() {
           {updateStatus.message}
         </div>
       )}
-      {/* Add New Button */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 py-4 border-b border-gray-200 dark:border-gray-700 gap-4">
-        <div className="relative w-full sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-          <input
-            type="text"
-            placeholder="Search records..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:bg-white/[0.05] dark:border-white/[0.1] dark:text-white text-sm shadow-sm"
-          />
-        </div>
-        <Button
-          variant="primary"
+      {/* Add New Button & Search row matched to BasicTable */}
+      <div className="flex items-center justify-between px-1 sticky top-0 z-20 py-2 border-b border-gray-200 dark:border-gray-700">
+        <input
+          type="text"
+          placeholder="Search records..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full max-w-sm px-3 py-1.5 text-sm rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-white/[0.05] dark:border-white/[0.1] dark:text-white"
+        />
+        <button
           onClick={handleAddClick}
-          className="flex w-full sm:w-auto items-center justify-center gap-1.5 text-xs py-2 px-4 rounded-lg shadow-md transition-all hover:shadow-lg active:scale-95"
-          size="sm"
+          className="flex h-9 items-center gap-2 px-4 text-sm font-medium text-white bg-brand-500 rounded-lg hover:bg-brand-600 transition-all shadow-sm"
         >
-          <Plus size={14} strokeWidth={2.5} />
-          <span>Add New</span>
-        </Button>
+          <Plus size={18} />
+          <span className="hidden sm:inline">Add New</span>
+        </button>
       </div>
 
       {/* Table container with fixed height for scrolling */}
@@ -557,11 +615,9 @@ export default function MasterTable() {
                       ].map(({ width, label }) => (
                         <TableCell
                           key={label}
-                          className={`${width} px-6 py-4 font-bold text-gray-900 dark:text-white whitespace-nowrap dark:bg-brand-500 text-center dark:from-gray-800 dark:to-gray-700 border-r border-gray-200 dark:border-gray-600 shadow-sm`}
+                          className={`${width} px-6 py-4 font-semibold text-gray-900 dark:text-white whitespace-nowrap bg-gray-50 dark:bg-brand-500`}
                         >
-                          <div className="flex items-center space-x-1">
-                            <span className="text-sm uppercase tracking-wide">{label}</span>
-                          </div>
+                          {label}
                         </TableCell>
                       ))}
                     </TableRow>

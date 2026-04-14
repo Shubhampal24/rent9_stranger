@@ -122,7 +122,6 @@ const Page = () => {
       if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`)
       const data = await res.json()
       const details = data.data || data
-      console.log("Fetched Electricity Site Details:", details);
       setSiteDetails(details)
       const owners = details.owners || details.ownerId || []
       if (owners.length > 0) {
@@ -140,7 +139,6 @@ const Page = () => {
   }
 
   const handleSiteClick = async (site: any) => {
-    console.log("Electricity Site Clicked:", site);
     setSelectedSite(site)
     await fetchSiteDetails(site._id || site.id)
   }

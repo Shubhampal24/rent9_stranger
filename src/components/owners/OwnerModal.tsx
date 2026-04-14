@@ -142,7 +142,6 @@ export default function OwnerModal({ isOpen, onClose, onSave, initialData }: Own
       })).filter(b => b._id || b.accountNo), // Keep if it has _id (for updates/deletes) or if it's new and has accountNo
     };
 
-    console.log("🚀 [OwnerModal] Submitting Payload:", JSON.stringify(payload, null, 2));
     onSave(payload);
     // Note: onSave in OwnerTable will handle the API call and logging the response
   };

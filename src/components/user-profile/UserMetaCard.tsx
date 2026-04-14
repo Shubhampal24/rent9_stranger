@@ -120,8 +120,6 @@ export default function UserMetaCard() {
   //   try {
   //     if (!userId || !token) return;
 
-  //     console.log("Saving changes...", editUserDetails);
-
   //     const response = await fetch(
   //       `${process.env.NEXT_PUBLIC_API_URL}/api/users/user/${userId}`,
   //       {

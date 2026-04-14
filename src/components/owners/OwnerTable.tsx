@@ -91,7 +91,7 @@ export default function OwnerTable() {
       setLoading(false);
     }
   }, []);
-  console.log("🚀 [OwnerTable] Owners:", owners);
+
 
   const fetchSites = useCallback(async () => {
     try {
@@ -138,8 +138,6 @@ export default function OwnerTable() {
         : `${API}/api/rent/owners/`;
       const method = isUpdate ? "PUT" : "POST";
 
-      console.log(`🚀 [OwnerTable] ${method} Request to: ${url}`);
-      console.log(`🚀 [OwnerTable] Payload:`, JSON.stringify(formData, null, 2));
 
       const res = await fetch(url, {
         method,
@@ -148,7 +146,6 @@ export default function OwnerTable() {
       });
 
       const result = await res.json();
-      console.log(`🚀 [OwnerTable] API Response:`, JSON.stringify(result, null, 2));
 
       if (!res.ok) {
         throw new Error(result.message ?? `Failed to ${isUpdate ? "update" : "create"} owner`);

@@ -541,7 +541,7 @@ export default function MaintenanceTransactionsTable() {
                                             {[
                                                 { width: "w-16", label: "Site Code" },
                                                 { width: "w-24", label: "Site Name" },
-                                                { width: "w-20", label: "Owner Name" },
+                                                // { width: "w-20", label: "Owner Name" },
                                                 { width: "w-40", label: "Description" },
                                                 { width: "w-32", label: "Bill Period" },
                                                 { width: "w-32", label: "Payment Date" },
@@ -569,9 +569,9 @@ export default function MaintenanceTransactionsTable() {
                                             >
                                                 <TableCell className="w-16 px-6 py-4 text-gray-900 dark:text-gray-100">{item.siteId?.code || '-'}</TableCell>
                                                 <TableCell className="w-24 px-6 py-4 text-gray-900 dark:text-gray-100">{item.siteId?.siteName || '-'}</TableCell>
-                                                <TableCell className="w-32 px-6 py-4 text-gray-900 dark:text-gray-100 font-medium">
+                                                {/* <TableCell className="w-32 px-6 py-4 text-gray-900 dark:text-gray-100 font-medium">
                                                     {item.ownerName || "..."}
-                                                </TableCell>
+                                                </TableCell> */}
                                                 <TableCell className="w-40 px-6 py-4 text-gray-900 dark:text-gray-100">{item.maintenanceDescription || "-"}</TableCell>
                                                 <TableCell className="w-32 px-6 py-4 text-gray-900 dark:text-gray-100">
                                                     {item.monthYear || '-'}

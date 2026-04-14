@@ -59,8 +59,6 @@ export default function UpcomingRentSitesTable() {
         // API call with specific category
         const response = await fetch(`${baseUrl}?category=${activeCategory.toLowerCase()}&monthYear=${selectedMonth}`, { headers });
 
-        // Detailed log for debugging the 404 issue as requested
-        console.log(`[Pending Bills API] Category: ${activeCategory}, Status: ${response.status} ${response.statusText}`);
 
         if (!response.ok) {
           if (response.status === 404) {
@@ -75,7 +73,6 @@ export default function UpcomingRentSitesTable() {
         }
 
         const result = await response.json();
-        console.log("result", result);
 
         // Populate allowed months from API
         if (result.allowedMonths && Array.isArray(result.allowedMonths)) {
@@ -226,58 +223,20 @@ export default function UpcomingRentSitesTable() {
   };
 
   return (
-    <div className="w-full rounded-2xl border shadow-sm border-gray-200 dark:border-gray-700 bg-white dark:bg-white/[0.03] overflow-hidden">
-      {/* Category Summary Header */}
-      <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer ${activeCategory === "Rent" ? "bg-white dark:bg-gray-800 border-blue-200 shadow-sm ring-1 ring-blue-500/10" : "bg-transparent border-transparent hover:bg-white/40"}`} onClick={() => setActiveCategory("Rent")}>
-            <div className="flex items-center gap-2 mb-1">
-              <FileText size={14} className="text-blue-500" />
-              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Rent</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold text-gray-900 dark:text-white leading-none">{categoriesSummary.rent.count}</span>
-              <span className="text-xs font-semibold text-blue-600/70">₹{categoriesSummary.rent.amount.toLocaleString()}</span>
-            </div>
-          </div>
-
-          <div className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer ${activeCategory === "Electricity" ? "bg-white dark:bg-gray-800 border-amber-200 shadow-sm ring-1 ring-amber-500/10" : "bg-transparent border-transparent hover:bg-white/40"}`} onClick={() => setActiveCategory("Electricity")}>
-            <div className="flex items-center gap-2 mb-1">
-              <Zap size={14} className="text-amber-500" />
-              <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Electricity</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold text-gray-900 dark:text-white leading-none">{categoriesSummary.electricity.count}</span>
-              <span className="text-xs font-semibold text-amber-600/70">₹{categoriesSummary.electricity.amount.toLocaleString()}</span>
-            </div>
-          </div>
-
-          <div className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer ${activeCategory === "Maintenance" ? "bg-white dark:bg-gray-800 border-purple-200 shadow-sm ring-1 ring-purple-500/10" : "bg-transparent border-transparent hover:bg-white/40"}`} onClick={() => setActiveCategory("Maintenance")}>
-            <div className="flex items-center gap-2 mb-1">
-              <Wrench size={14} className="text-purple-500" />
-              <span className="text-[10px] font-bold text-purple-500 uppercase tracking-widest">Maintenance</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold text-gray-900 dark:text-white leading-none">{categoriesSummary.maintenance.count}</span>
-              <span className="text-xs font-semibold text-purple-600/70">₹{categoriesSummary.maintenance.amount.toLocaleString()}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Action Bar */}
-      <div className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+    <div className="w-full rounded-xl border shadow-xs border-gray-200 dark:border-gray-700 bg-white dark:bg-white/[0.03] overflow-hidden">
+      {/* Action Bar - Ultra Tight */}
+      <div className="p-2 flex flex-col sm:flex-row items-center justify-between gap-2 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
           <div className="relative w-full sm:w-auto">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={18} className="text-gray-400" />
+            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+              <Search size={14} className="text-gray-400" />
             </div>
             <input
               type="text"
-              placeholder="Search all pending payments..."
+              placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-10 w-full sm:w-[300px] rounded-lg border border-gray-100 bg-gray-50/50 dark:bg-white/[0.03] dark:border-gray-800 pl-10 pr-4 text-sm text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="h-7 w-full sm:w-[180px] rounded-md border border-gray-100 bg-gray-50/50 dark:bg-white/[0.03] dark:border-gray-800 pl-8 pr-2 text-[10px] text-gray-800 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500/10"
             />
           </div>
 
@@ -286,7 +245,7 @@ export default function UpcomingRentSitesTable() {
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="h-10 w-full sm:w-[180px] rounded-lg border border-gray-100 bg-gray-50/50 dark:bg-white/[0.03] dark:border-gray-800 pl-10 pr-4 text-sm font-bold text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none cursor-pointer"
+                className="h-7 w-full sm:w-[130px] rounded-md border border-gray-100 bg-gray-50/50 dark:bg-white/[0.03] dark:border-gray-800 pl-7 pr-2 text-[10px] font-bold text-gray-800 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500/10 appearance-none cursor-pointer"
               >
                 {allowedMonths.map((m) => (
                   <option key={m} value={m} className="dark:bg-gray-900">
@@ -299,20 +258,20 @@ export default function UpcomingRentSitesTable() {
                 type="month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="h-10 w-full rounded-lg border border-gray-100 bg-gray-50/50 dark:bg-white/[0.03] dark:border-gray-800 pl-10 pr-4 text-sm text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="h-7 w-full rounded-md border border-gray-100 bg-gray-50/50 dark:bg-white/[0.03] dark:border-gray-800 pl-7 pr-2 text-[10px] text-gray-800 dark:text-white outline-none focus:ring-1 focus:ring-indigo-500/10"
               />
             )}
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none" size={16} />
+            <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none" size={12} />
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+        <div className="flex items-center gap-1 p-0.5 bg-gray-100 dark:bg-gray-800/50 rounded-md">
           {["Rent", "Electricity", "Maintenance"].map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-3 py-1.5 text-[10px] font-bold uppercase rounded-md transition-all ${activeCategory === cat
-                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+              className={`px-2 py-0.5 text-[8px] font-bold uppercase rounded transition-all ${activeCategory === cat
+                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs"
                 : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                 }`}
             >
@@ -322,58 +281,57 @@ export default function UpcomingRentSitesTable() {
         </div>
       </div>
 
-      {/* Table Container */}
-      <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-        <Table className="min-w-full text-xs text-gray-600 dark:text-gray-300">
-          <TableHeader className="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-transparent tracking-widest sticky top-0 z-10 border-b border-gray-100 dark:border-gray-800">
-            <TableRow className="h-12">
-              <TableCell isHeader className="w-10 px-3 py-2">{null}</TableCell>
-              <TableCell isHeader className="w-28 px-4 py-2 text-left">Code</TableCell>
-              <TableCell isHeader className="w-40 px-4 py-2 text-left">Site Name</TableCell>
-              <TableCell isHeader className="w-36 px-4 py-2 text-left">Owner</TableCell>
-              <TableCell isHeader className="w-28 px-4 py-2 text-center">Period</TableCell>
-              <TableCell isHeader className="w-28 px-4 py-2 text-right">Amount</TableCell>
-              <TableCell isHeader className="w-24 px-4 py-2 text-center">Status</TableCell>
+      {/* Table Container - Ultra Compact */}
+      <div className="max-h-[35vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+        <Table className="min-w-full text-[10px] text-gray-600 dark:text-gray-300">
+          <TableHeader className="text-[8px] uppercase font-extrabold text-gray-400 dark:text-gray-500 bg-gray-50/50 dark:bg-transparent tracking-tighter sticky top-0 z-10 border-b border-gray-50 dark:border-gray-800">
+            <TableRow className="h-7">
+              <TableCell isHeader className="w-6 px-1 py-0">{null}</TableCell>
+              <TableCell isHeader className="w-20 px-2 py-0 text-left">CODE</TableCell>
+              <TableCell isHeader className="w-36 px-2 py-0 text-left">SITE</TableCell>
+              <TableCell isHeader className="w-28 px-2 py-0 text-left">OWNER</TableCell>
+              <TableCell isHeader className="w-20 px-2 py-0 text-center">PERIOD</TableCell>
+              <TableCell isHeader className="w-20 px-2 py-0 text-right">AMOUNT</TableCell>
+              <TableCell isHeader className="w-16 px-2 py-0 text-center">STATUS</TableCell>
             </TableRow>
           </TableHeader>
 
-          <TableBody className="divide-y divide-gray-50 dark:divide-gray-800/50">
+          <TableBody className="divide-y divide-gray-50 dark:divide-gray-800/20">
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-gray-400">Loading payment data...</TableCell>
+                <TableCell colSpan={7} className="py-4 text-center text-gray-400 italic">Syncing...</TableCell>
               </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-red-500">{error}</TableCell>
+                <TableCell colSpan={7} className="py-4 text-center text-red-500">{error}</TableCell>
               </TableRow>
             ) : filteredData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-gray-400">
-                  {searchTerm
-                    ? `No records found matching "${searchTerm}" in ${activeCategory}.`
-                    : `No pending ${activeCategory.toLowerCase()} payments found.`}
+                <TableCell colSpan={7} className="py-4 text-center text-gray-500 opacity-60">
+                  No data.
                 </TableCell>
               </TableRow>
             ) : (
               filteredData.map((site) => (
-                <TableRow key={`${site.category}-${site.id}-${site.code}`} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors">
-                  <TableCell className="w-10 px-3 py-3">{null}</TableCell>
-                  <TableCell className="w-28 px-4 py-3 font-bold text-gray-900 dark:text-white text-left">{site.code}</TableCell>
-                  <TableCell className="w-40 px-4 py-3 text-left">
-                    <span className="font-semibold text-gray-800 dark:text-white/90">{site.siteName}</span>
+                <TableRow key={`${site.category}-${site.id}-${site.code}`} className="hover:bg-gray-50/30 dark:hover:bg-white/[0.01] transition-colors h-7">
+                  <TableCell className="w-6 px-1 py-0.5">{null}</TableCell>
+                  <TableCell className="w-20 px-2 py-0.5 font-bold text-gray-900 dark:text-white text-left">{site.code}</TableCell>
+                  <TableCell className="w-36 px-2 py-0.5 text-left">
+                    <span className="font-semibold text-gray-800 dark:text-white/80">{site.siteName}</span>
                   </TableCell>
-                  <TableCell className="w-36 px-4 py-3 text-left">
-                    <span className="text-gray-600 dark:text-gray-400 font-medium">{site.ownerName}</span>
+                  <TableCell className="w-28 px-2 py-0.5 text-left">
+                    <span className="text-gray-500 dark:text-gray-400 font-medium">{site.ownerName}</span>
                   </TableCell>
-                  <TableCell className="w-28 px-4 py-3 text-center">
-                    <span className="text-gray-500 dark:text-gray-400 font-mono text-[11px]">{site.period}</span>
+                  <TableCell className="w-20 px-2 py-0.5 text-center">
+                    <span className="text-gray-500 dark:text-gray-400 font-mono text-[9px]">{site.period}</span>
                   </TableCell>
-                  <TableCell className="w-28 px-4 py-3 text-right font-bold text-gray-900 dark:text-white">
+                  <TableCell className="w-20 px-2 py-0.5 text-right font-bold text-gray-900 dark:text-white">
                     ₹{site.pendingAmount.toLocaleString()}
                   </TableCell>
-                  <TableCell className="w-24 px-4 py-3 text-center">
+                  <TableCell className="w-16 px-2 py-0.5 text-center">
                     <Badge
                       size="sm"
+                      className="text-[8px] px-1 py-0 h-4 min-h-0"
                       color={
                         site.status === "paid"
                           ? "success"

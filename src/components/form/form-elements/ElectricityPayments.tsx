@@ -93,9 +93,8 @@ export default function ElectricityPaymentForm({ siteId, owners = [], currentMon
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
-        console.log("📝 [Electricity Transaction] Form State:", formData);
-        
+
+
         const requiredFields = [
             { field: 'monthYear', label: 'Billing Month' },
             { field: 'paymentAmount', label: 'Amount Paid' },
@@ -104,9 +103,8 @@ export default function ElectricityPaymentForm({ siteId, owners = [], currentMon
         ];
 
         const missing = requiredFields.filter(f => !formData[f.field as keyof typeof formData]);
-        
+
         if (missing.length > 0) {
-            console.warn("⚠️ Validation Failed. Missing fields:", missing.map(m => m.label));
             toast.error(`Please provide: ${missing.map(m => m.label).join(', ')}`, {
                 style: { background: '#EF4444', color: 'white' }
             });
@@ -120,7 +118,7 @@ export default function ElectricityPaymentForm({ siteId, owners = [], currentMon
             if (!token) throw new Error("Authentication session expired. Please login again.");
 
             const submitData = new FormData();
-            
+
             // Standardizing to camelCase consistent with Rent Payments
             submitData.append('siteId', String(formData.siteId));
             submitData.append('monthYear', formData.monthYear);
@@ -139,13 +137,7 @@ export default function ElectricityPaymentForm({ siteId, owners = [], currentMon
                 submitData.append('image', proofImage);
             }
 
-            // Debug payload
-            console.log("🚀 [Electricity Transaction] Sending Payload:");
-            for (let [key, value] of (submitData as any).entries()) {
-                console.log(`${key}:`, value instanceof File ? `File: ${value.name}` : value);
-            }
 
-            console.log("⚡ [Electricity Transaction] Submitting...");
 
             // Updated endpoint to match working siteTransaction pattern
             const url = `${process.env.NEXT_PUBLIC_API_URL}/api/rent/siteTransaction/electricity-transaction`;
@@ -156,7 +148,6 @@ export default function ElectricityPaymentForm({ siteId, owners = [], currentMon
             });
 
             const data = await response.json();
-            console.log("⚡ [Electricity Transaction] Response:", data);
 
             if (!response.ok) {
                 throw new Error(data.message || 'Verification failed on server');
@@ -313,7 +304,7 @@ export default function ElectricityPaymentForm({ siteId, owners = [], currentMon
                             onChange={(date: Date[]) => handleDateChange('paymentDate', date)}
                         />
                     </div>
-                    
+
                     <div className="space-y-1.5">
                         <Label htmlFor="utrNumber" className="text-xs font-bold uppercase tracking-wider text-gray-400">UTR Number*</Label>
                         <Input

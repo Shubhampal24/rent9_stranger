@@ -100,7 +100,6 @@ export default function SiteRentTransactionsTable({ siteId: propSiteId, site }: 
             if (!token) throw new Error("Authentication token not found");
 
             const url = `${process.env.NEXT_PUBLIC_API_URL}/api/rent/rentTransactions?site_id=${siteId}`;
-            console.log("Fetching rent transactions from:", url);
 
             const response = await fetch(url, {
                 headers: {
@@ -109,7 +108,6 @@ export default function SiteRentTransactionsTable({ siteId: propSiteId, site }: 
                 },
             });
 
-            console.log("Rent Transactions API Response Status:", response.status);
 
             if (!response.ok) {
                 console.error("Rent Transactions Error Response:", response);
@@ -126,7 +124,6 @@ export default function SiteRentTransactionsTable({ siteId: propSiteId, site }: 
             setTransactions(payments);
             setTotalCount(data.count ?? payments.length);
             setError(null);
-            console.log("Fetched rent transactions:", payments);
         } catch (error) {
             console.error("Error fetching rent transactions:", error);
             setError(

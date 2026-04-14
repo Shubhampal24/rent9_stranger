@@ -140,7 +140,7 @@ export default function UserDropdown() {
             )}
           </div>
           
-          <button 
+          {/* <button 
             onClick={(e) => {
               e.stopPropagation();
               toggleTheme();
@@ -149,7 +149,7 @@ export default function UserDropdown() {
             title="Toggle theme"
           >
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
+          </button> */}
         </div>
 
         <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
@@ -175,7 +175,7 @@ export default function UserDropdown() {
                   fill=""
                 />
               </svg>
-              Edit profile
+              View profile
             </DropdownItem>
           </li>
           {/* <li>

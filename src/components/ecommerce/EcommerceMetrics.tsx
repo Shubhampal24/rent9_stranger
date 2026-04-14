@@ -9,250 +9,262 @@ import {
   TrendingUp, 
   Zap, 
   Wrench,
-  FileText
+  FileText,
+  Clock,
 } from "lucide-react";
 
-export const EcommerceMetrics = () => {
+export const EcommerceMetrics = ({ 
+  activeTab, 
+  onSelect 
+}: { 
+  activeTab?: string | null; 
+  onSelect?: (tab: string|null, data?: any[]) => void 
+}) => {
   const [stats, setStats] = useState<any>(null);
+  const [recentPaid, setRecentPaid] = useState<any>(null);
+  const [upcomingPending, setUpcomingPending] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchAllData = async () => {
       try {
+        setLoading(true);
         const token = localStorage.getItem("token");
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/rent/dashboard/stats`, {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
+        const headers = {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        };
+        const baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/rent/dashboard`;
+
+        const [statsRes, paidRes, pendingRes] = await Promise.all([
+          fetch(`${baseUrl}/stats`, { headers }),
+          fetch(`${baseUrl}/recent-paid-transactions`, { headers }),
+          fetch(`${baseUrl}/upcoming-pending-transactions`, { headers })
+        ]);
+
+        const statsData = await statsRes.json();
+        const paidData = await paidRes.json();
+        const pendingData = await pendingRes.json();
+
+        console.log("Dashboard Stats Response:", statsData);
+        console.log("Recent Paid Transactions Response:", paidData);
+        console.log("Upcoming Pending Transactions Response:", pendingData);
+
+        if (statsData.success) setStats(statsData.data);
+        if (paidData.success) setRecentPaid(paidData);
+        if (pendingData.success) setUpcomingPending(pendingData);
+
+        // Auto-select initial data if activeTab is set by default
+        if (activeTab) {
+          let dataToPass: any[] | undefined = undefined;
+          switch (activeTab) {
+            case "recent-paid-rent": dataToPass = paidData?.data?.rent; break;
+            case "recent-paid-elec": dataToPass = paidData?.data?.electricity; break;
+            case "recent-paid-maint": dataToPass = paidData?.data?.maintenance; break;
+            case "upcoming-pending-rent": dataToPass = pendingData?.data?.rent; break;
+            case "upcoming-pending-elec": dataToPass = pendingData?.data?.electricity; break;
+            case "upcoming-pending-maint": dataToPass = pendingData?.data?.maintenance; break;
+            default: dataToPass = undefined;
           }
-        });
-        const data = await res.json();
-        if (data.success) {
-          setStats(data.data);
+          if (dataToPass) onSelect?.(activeTab, dataToPass);
         }
+
       } catch (error) {
-        // Silent error
+        console.error("Error fetching dashboard metrics:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStats();
+    fetchAllData();
   }, []);
 
+  const handleCardClick = (id: string) => {
+    if (activeTab === id) {
+      onSelect?.(null);
+      return;
+    }
+
+    let dataToPass: any[] | undefined = undefined;
+    
+    // Map IDs to specific arrays from the responses
+    switch (id) {
+      case "recent-paid-rent": dataToPass = recentPaid?.data?.rent; break;
+      case "recent-paid-elec": dataToPass = recentPaid?.data?.electricity; break;
+      case "recent-paid-maint": dataToPass = recentPaid?.data?.maintenance; break;
+      case "upcoming-pending-rent": dataToPass = upcomingPending?.data?.rent; break;
+      case "upcoming-pending-elec": dataToPass = upcomingPending?.data?.electricity; break;
+      case "upcoming-pending-maint": dataToPass = upcomingPending?.data?.maintenance; break;
+      default: dataToPass = undefined;
+    }
+
+    onSelect?.(id, dataToPass);
+  };
+
   const MetricCard = ({
+    id,
     icon: Icon,
     title,
     value,
     description,
-    gradient,
-    iconBg
+    colorClass,
+    iconColor
   }: {
+    id: string;
     icon: React.ComponentType<{ className?: string }>;
     title: string;
     value: string | number;
     description: string;
-    gradient: string;
-    iconBg: string;
-  }) => (
-    <div className={`group relative overflow-hidden rounded-2xl bg-white p-4 shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 dark:bg-[#121212]/50 dark:border-gray-800/70 ${
-      title === "Total Sites" ? "hover:border-blue-500/50" : 
-      title === "Total Revenue" ? "hover:border-emerald-500/50" : 
-      title === "Pending Payments" ? "hover:border-amber-500/50" : 
-      "hover:border-purple-500/50"
-    }`}>
-      {/* Gradient overlay */}
-      <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300 ${gradient}`} />
+    colorClass: string;
+    iconColor: string;
+  }) => {
+    const isSelected = activeTab === id;
 
-      {/* Content */}
-      <div className="relative">
-        {/* Icon container */}
-        <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl mb-2 transition-transform duration-300 group-hover:scale-110 ${iconBg}`}>
-          <Icon className="w-5 h-5 text-white" />
-        </div>
+    return (
+      <div 
+        onClick={() => handleCardClick(id)}
+        className={`group relative overflow-hidden rounded-xl p-5 transition-all duration-300 cursor-pointer border ${
 
-        {/* Metrics */}
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-            {title}
-          </p>
-          <div className="flex items-baseline space-x-1">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+          isSelected 
+            ? `bg-white/[0.05] border-${iconColor}-500/50 ring-1 ring-${iconColor}-500/20 shadow-lg shadow-${iconColor}-500/10` 
+            : "bg-[#0B0C10] border-white/[0.03] hover:border-white/[0.08] hover:bg-[#121418]"
+        }`}
+      >
+        <div className="relative z-10">
+          {/* Icon Box */}
+          <div className={`inline-flex items-center justify-center w-10 h-10 rounded-lg mb-4 transition-transform duration-300 group-hover:scale-110 bg-white/[0.03] border border-white/[0.05]`}>
+            <Icon className={`w-5 h-5 ${colorClass}`} />
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">
+              {title}
+            </p>
+            <h3 className="text-2xl font-bold text-white tracking-tight">
               {loading ? (
-                <div className="flex items-center space-x-1">
-                  <div className="w-6 h-6 bg-gray-200 rounded animate-pulse dark:bg-gray-700" />
-                  <div className="w-10 h-6 bg-gray-200 rounded animate-pulse dark:bg-gray-700" />
-                </div>
+                <div className="h-8 w-24 bg-white/5 animate-pulse rounded" />
               ) : (
-                <span className="bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent dark:from-white dark:to-gray-300">
-                  {typeof value === 'number' ? value.toLocaleString() : value}
-                </span>
+                typeof value === 'number' ? value.toLocaleString() : value
               )}
             </h3>
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-[11px] text-gray-500 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                {description}
+              </p>
+              {isSelected && (
+                 <div className="flex items-center gap-1">
+                    <div className="w-1 h-1 rounded-full bg-blue-500 animate-ping" />
+                    <div className="w-1 h-1 rounded-full bg-blue-500" />
+                 </div>
+              )}
+            </div>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-            {description}
-          </p>
         </div>
 
-        {/* Bottom accent line */}
-        <div className={`absolute bottom-0 left-4 right-4 h-0.5 rounded-full opacity-20 group-hover:opacity-60 transition-opacity duration-300 ${gradient.split(' ')[1]}`} />
+        {/* Hover Gradient Effect */}
+        <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-br from-white/10 to-transparent`} />
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
-    <div className="w-full space-y-6">
-      {/* Top Level Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div onClick={() => window.location.href = "/basic-tables"} className="cursor-pointer">
-          <MetricCard
-            icon={Building2}
-            title="Total Sites"
-            value={stats?.sites?.total ?? 0}
-            description={`${stats?.sites?.active ?? 0} Active / ${stats?.sites?.inactive ?? 0} Inactive`}
-            gradient="bg-gradient-to-br from-blue-500 to-blue-600"
-            iconBg="bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-500/25 shadow-lg"
-          />
-        </div>
+    <div className="w-full space-y-4">
+      {/* Top Row: Overall Totals (Sites & Revenue) */}
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+        <MetricCard
+          id="total-sites"
+          icon={Building2}
+          title="Total Sites"
+          value={stats?.sites?.total ?? 0}
+          description={`${stats?.sites?.active ?? 0} Active / ${stats?.sites?.inactive ?? 0} Inactive`}
+          colorClass="text-blue-500"
+          iconColor="blue"
+        />
 
-        <div onClick={() => window.location.href = "/total-paid"} className="cursor-pointer">
-          <MetricCard
-            icon={IndianRupee}
-            title="Total Revenue"
-            value={`₹${(stats?.transactions?.totalAmount ?? 0).toLocaleString()}`}
-            description={`Paid: ₹${(stats?.transactions?.paidAmount ?? 0).toLocaleString()}`}
-            gradient="bg-gradient-to-br from-emerald-500 to-emerald-600"
-            iconBg="bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/25 shadow-lg"
-          />
-        </div>
+        <MetricCard
+          id="total-revenue"
+          icon={IndianRupee}
+          title="Total Revenue"
+          value={`₹${(stats?.transactions?.totalAmount ?? 0).toLocaleString()}`}
+          description={`₹${(stats?.transactions?.paidAmount ?? 0).toLocaleString()} Collected`}
+          colorClass="text-emerald-500"
+          iconColor="emerald"
+        />
+      </div> */}
 
-        <div onClick={() => window.location.href = "/pending-payment"} className="cursor-pointer">
-          <MetricCard
-            icon={AlertCircle}
-            title="Pending Payments"
-            value={stats?.transactions?.pending ?? 0}
-            description={`Remaining: ₹${(stats?.transactions?.pendingAmount ?? 0).toLocaleString()}`}
-            gradient="bg-gradient-to-br from-amber-500 to-amber-600"
-            iconBg="bg-gradient-to-br from-amber-500 to-amber-600 shadow-amber-500/25 shadow-lg"
-          />
-        </div>
+      {/* Dynamic Grid: Transactions Breakdown (6 Cards) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Rent Group */}
+        <MetricCard
+          id="recent-paid-rent"
+          icon={TrendingUp}
+          title="Recent Paid Rent"
+          value={`₹${(recentPaid?.summary?.totalPaidRent ?? 0).toLocaleString()}`}
+          description={`${recentPaid?.summary?.rentCount ?? 0} Transactions Paid`}
+          colorClass="text-emerald-400"
+          iconColor="emerald"
+        />
 
-        <div className="cursor-default">
-          <MetricCard
-            icon={Users}
-            title="Platform Users"
-            value={(stats?.owners?.total ?? 0) + (stats?.consumers?.total ?? 0)}
-            description={`${stats?.owners?.total ?? 0} Owners / ${stats?.consumers?.total ?? 0} Consumers`}
-            gradient="bg-gradient-to-br from-purple-500 to-purple-600"
-            iconBg="bg-gradient-to-br from-purple-500 to-purple-600 shadow-purple-500/25 shadow-lg"
-          />
-        </div>
-      </div>
+        <MetricCard
+          id="upcoming-pending-rent"
+          icon={Clock}
+          title="Upcoming Pending Rent"
+          value={`₹${(upcomingPending?.summary?.totalPendingRentAmount ?? 0).toLocaleString()}`}
+          description={`${upcomingPending?.summary?.rentCount ?? 0} Expected Sites`}
+          colorClass="text-amber-400"
+          iconColor="amber"
+        />
 
-      {/* Category Wise Breakdown */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Rent Card */}
-        <div className="p-4 rounded-2xl bg-white border border-gray-100 hover:border-blue-500/50 transition-all duration-300 dark:bg-[#121212]/50 dark:border-gray-800/70">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                <FileText size={16} className="text-blue-600 dark:text-blue-400" />
-              </div>
-              <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Rent</h4>
-            </div>
-            <span className="px-2 py-1 text-[10px] font-bold bg-blue-100 text-blue-600 rounded-full dark:bg-blue-900/30 dark:text-blue-400">
-              {stats?.rent?.count ?? 0} Transactions
-            </span>
-          </div>
-          <div className="space-y-3">
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-500">Paid</span>
-              <span className="font-semibold text-emerald-600">₹{(stats?.rent?.paidAmount ?? 0).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-500">Pending</span>
-              <span className="font-semibold text-amber-600">₹{(stats?.rent?.pendingAmount ?? 0).toLocaleString()}</span>
-            </div>
-            <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden dark:bg-gray-800">
-              <div 
-                className="bg-blue-500 h-full rounded-full transition-all duration-1000" 
-                style={{ width: `${(stats?.rent?.paidAmount / (stats?.rent?.totalAmount || 1)) * 100}%` }}
-              />
-            </div>
-          </div>
-        </div>
+        {/* Electricity Group */}
+        <MetricCard
+          id="recent-paid-elec"
+          icon={Zap}
+          title="Recent Paid Elec"
+          value={`₹${(recentPaid?.summary?.totalPaidElectricity ?? 0).toLocaleString()}`}
+          description={`${recentPaid?.summary?.electricityCount ?? 0} Transactions Paid`}
+          colorClass="text-emerald-400"
+          iconColor="emerald"
+        />
 
-        {/* Electricity Card */}
-        <div className="p-4 rounded-2xl bg-white border border-gray-100 hover:border-amber-500/50 transition-all duration-300 dark:bg-[#121212]/50 dark:border-gray-800/70">
-          <div className="flex justify-between items-center mb-4">
-             <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-amber-50 dark:bg-amber-900/30 rounded-lg">
-                <Zap size={16} className="text-amber-600 dark:text-amber-400" />
-              </div>
-              <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Electricity</h4>
-            </div>
-            <span className="px-2 py-1 text-[10px] font-bold bg-amber-100 text-amber-600 rounded-full dark:bg-amber-900/30 dark:text-amber-400">
-              {stats?.electricity?.count ?? 0} Transactions
-            </span>
-          </div>
-          <div className="space-y-3">
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-500">Paid</span>
-              <span className="font-semibold text-emerald-600">₹{(stats?.electricity?.paidAmount ?? 0).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-500">Pending</span>
-              <span className="font-semibold text-amber-600">₹{(stats?.electricity?.pendingAmount ?? 0).toLocaleString()}</span>
-            </div>
-            <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden dark:bg-gray-800">
-              <div 
-                className="bg-amber-500 h-full rounded-full transition-all duration-1000" 
-                style={{ width: `${(stats?.electricity?.paidAmount / (stats?.electricity?.totalAmount || 1)) * 100}%` }}
-              />
-            </div>
-          </div>
-        </div>
+        <MetricCard
+          id="upcoming-pending-elec"
+          icon={AlertCircle}
+          title="Upcoming Pending Elec"
+          value={`₹${(upcomingPending?.summary?.totalPendingElectricityAmount ?? 0).toLocaleString()}`}
+          description={`${upcomingPending?.summary?.electricityCount ?? 0} Expected Sites`}
+          colorClass="text-amber-400"
+          iconColor="amber"
+        />
 
-        {/* Maintenance Card */}
-        <div className="p-4 rounded-2xl bg-white border border-gray-100 hover:border-purple-500/50 transition-all duration-300 dark:bg-[#121212]/50 dark:border-gray-800/70">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
-                <Wrench size={16} className="text-purple-600 dark:text-purple-400" />
-              </div>
-              <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Maintenance</h4>
-            </div>
-            <span className="px-2 py-1 text-[10px] font-bold bg-purple-100 text-purple-600 rounded-full dark:bg-purple-900/30 dark:text-purple-400">
-              {stats?.maintenance?.count ?? 0} Transactions
-            </span>
-          </div>
-          <div className="space-y-3">
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-500">Paid</span>
-              <span className="font-semibold text-emerald-600">₹{(stats?.maintenance?.paidAmount ?? 0).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-500">Pending</span>
-              <span className="font-semibold text-amber-600">₹{(stats?.maintenance?.pendingAmount ?? 0).toLocaleString()}</span>
-            </div>
-            <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden dark:bg-gray-800">
-              <div 
-                className="bg-purple-500 h-full rounded-full transition-all duration-1000" 
-                style={{ width: `${(stats?.maintenance?.paidAmount / (stats?.maintenance?.totalAmount || 1)) * 100}%` }}
-              />
-            </div>
-          </div>
-        </div>
+        {/* Maintenance Group */}
+        <MetricCard
+          id="recent-paid-maint"
+          icon={Wrench}
+          title="Recent Paid Maint"
+          value={`₹${(recentPaid?.summary?.totalPaidMaintenance ?? 0).toLocaleString()}`}
+          description={`${recentPaid?.summary?.maintenanceCount ?? 0} Transactions Paid`}
+          colorClass="text-emerald-400"
+          iconColor="emerald"
+        />
+
+        <MetricCard
+          id="upcoming-pending-maint"
+          icon={Clock}
+          title="Upcoming Pending Maint"
+          value={`₹${(upcomingPending?.summary?.totalPendingMaintenanceAmount ?? 0).toLocaleString()}`}
+          description={`${upcomingPending?.summary?.maintenanceCount ?? 0} Expected Sites`}
+          colorClass="text-amber-400"
+          iconColor="amber"
+        />
       </div>
 
       {/* Loading overlay */}
       {loading && (
         <div className="absolute inset-0 z-50 bg-white/50 dark:bg-[#121212]/50 backdrop-blur-sm rounded-3xl flex items-center justify-center">
           <div className="flex items-center space-x-2">
-            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-              Loading metrics...
+              Syncing Dashboard...
             </span>
           </div>
         </div>
