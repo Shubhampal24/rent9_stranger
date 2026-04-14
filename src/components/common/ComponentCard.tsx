@@ -20,7 +20,7 @@ const ComponentCard: React.FC<ComponentCardProps> = ({
       {/* Card Header - Only render if title or desc is provided */}
       {(title || desc) && (
         <div className="px-4 py-2">
-          <h3 className="text-base font-medium text-gray-800 dark:text-white/90">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-white/90">
             {title}
           </h3>
           {desc && (

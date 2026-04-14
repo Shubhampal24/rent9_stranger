@@ -78,19 +78,30 @@ export default function UnifiedTransactionTable({ title, filterStatus, filterCat
         fetchCategory("/api/rent/maintenanceTransactions/site/all", "Maintenance"),
       ]);
 
-      const mapData = (raw: any[], category: "Rent" | "Electricity" | "Maintenance") => raw.map((t: any) => ({
-        id: t._id || t.id,
-        category,
-        siteIdInternal: t.siteId?._id || (typeof t.siteId === "string" ? t.siteId : null) || t.site_id || t.site,
-        siteCode: t.siteId?.code || t.siteCode || t.site_code || "-",
-        siteName: t.siteId?.siteName || t.siteName || t.site_name || "-",
-        ownerName: t.ownerId?.ownerName || t.ownerName || t.siteId?.ownerName || t.siteId?.owner_name || "-",
-        monthYear: t.monthYear || "-",
-        paymentDate: t.paymentDate || "",
-        amount: Number(t.paymentAmount) || Number(t.monthly_amount) || 0,
-        status: t.paidStatus || "Pending",
-        reference: t.utrNumber || t.utr_number || t.transactionId || t.reference || "-",
-      }));
+      const mapData = (raw: any[], category: "Rent" | "Electricity" | "Maintenance") => raw.map((t: any) => {
+        // Robust period extraction
+        let period = t.monthYear || t.month_year || t.rent_month_year || "-";
+        if (period === "-" && t.rent_month && t.rent_year) {
+          period = `${t.rent_month} ${t.rent_year}`;
+        } else if (typeof period === "string" && period.length > 7 && period.includes("-")) {
+          // Normalize YYYY-MM-DD to YYYY-MM
+          period = period.slice(0, 7);
+        }
+
+        return {
+          id: t._id || t.id,
+          category,
+          siteIdInternal: t.siteId?._id || (typeof t.siteId === "string" ? t.siteId : null) || t.site_id || t.site,
+          siteCode: t.siteId?.code || t.siteCode || t.site_code || "-",
+          siteName: t.siteId?.siteName || t.siteName || t.site_name || "-",
+          ownerName: t.ownerId?.ownerName || t.ownerName || t.siteId?.ownerName || t.siteId?.owner_name || "-",
+          monthYear: period,
+          paymentDate: t.paymentDate || t.payment_date || "",
+          amount: Number(t.paymentAmount || t.payment_amount || t.monthlyRent || t.monthly_rent || 0),
+          status: t.paidStatus || t.paid_status || "Pending",
+          reference: t.utrNumber || t.utr_number || t.transactionId || t.reference || "-",
+        };
+      });
 
       let combined = [...mapData(rentRaw, "Rent"), ...mapData(elecRaw, "Electricity"), ...mapData(maintRaw, "Maintenance")];
 
