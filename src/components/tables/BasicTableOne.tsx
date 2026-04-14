@@ -183,7 +183,7 @@ export default function BasicTableOne() {
                       ].map(({ width, label }) => (
                         <TableCell
                           key={label}
-                          className={`${width} px-6 py-4 font-semibold text-gray-900 dark:text-white whitespace-nowrap bg-gray-50 dark:bg-brand-500`}
+                          className={`${width} px-3 py-2 text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white whitespace-nowrap bg-gray-50 dark:bg-brand-500`}
                         >
                           {label}
                         </TableCell>
@@ -198,22 +198,22 @@ export default function BasicTableOne() {
                         key={site._id || site.id}
                         className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                       >
-                        <TableCell className="w-16 px-6 py-4 text-gray-900 dark:text-gray-100">
+                        <TableCell className="w-16 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
                           {index + 1}
                         </TableCell>
-                        <TableCell className="w-24 px-6 py-4 text-gray-900 dark:text-gray-100">
+                        <TableCell className="w-24 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
                           {site.code}
                         </TableCell>
-                        <TableCell className="w-40 px-6 py-4 text-gray-900 dark:text-gray-100">
+                        <TableCell className="w-40 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
                           {site.siteName}
                         </TableCell>
-                        <TableCell className="w-40 px-6 py-4 text-gray-900 dark:text-gray-100">
+                        <TableCell className="w-40 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
                           {site.propertyLocation}
                         </TableCell>
-                        <TableCell className="w-32 px-6 py-4 text-gray-900 dark:text-gray-100 font-medium">
+                        <TableCell className="w-32 px-3 py-2 text-xs text-gray-900 dark:text-gray-100 font-medium">
                           <SiteOwnerCell siteId={site._id || site.id} />
                         </TableCell>
-                        <TableCell className="w-24 px-6 py-4 text-gray-900 dark:text-gray-100">
+                        <TableCell className="w-24 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
                           <Badge
                             size="sm"
                             color={
@@ -227,7 +227,7 @@ export default function BasicTableOne() {
                             {site.status ?? "N/A"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="w-24 px-6 py-4 text-gray-900 dark:text-gray-100">
+                        <TableCell className="w-24 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
                            <button
                               onClick={() => navigateToTransactions(site._id || site.id)}
                               className="px-3 py-1 text-xs font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-all shadow-sm"
@@ -236,7 +236,7 @@ export default function BasicTableOne() {
                               HISTORY
                           </button>
                         </TableCell>
-                        <TableCell className="w-24 px-6 py-4 text-gray-900 dark:text-gray-100">
+                        <TableCell className="w-24 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
                           <button
                             onClick={() => navigateToEdit(site._id || site.id)}
                             className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-all shadow-sm"

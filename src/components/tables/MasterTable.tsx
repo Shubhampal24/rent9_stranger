@@ -615,7 +615,7 @@ export default function MasterTable() {
                       ].map(({ width, label }) => (
                         <TableCell
                           key={label}
-                          className={`${width} px-6 py-4 font-semibold text-gray-900 dark:text-white whitespace-nowrap bg-gray-50 dark:bg-brand-500`}
+                          className={`${width} px-3 py-2 text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white whitespace-nowrap bg-gray-50 dark:bg-brand-500`}
                         >
                           {label}
                         </TableCell>
@@ -630,16 +630,16 @@ export default function MasterTable() {
                         key={item._id || item.srNo}
                         className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                       >
-                        <TableCell className="w-16 px-6 py-4 text-gray-900 dark:text-gray-100">{item.srNo}</TableCell>
-                        <TableCell className="w-16 px-6 py-4 text-gray-900 dark:text-gray-100">{item.spaCode}</TableCell>
-                        <TableCell className="w-16 px-6 py-4 text-gray-900 dark:text-gray-100">{item.spaName}</TableCell>
-                        <TableCell className="w-16 px-6 py-4 text-gray-900 dark:text-gray-100">{item.cityName}</TableCell>
-                        <TableCell className="w-16 px-6 py-4 text-gray-900 dark:text-gray-100">{item.area}</TableCell>
+                        <TableCell className="w-16 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">{item.srNo}</TableCell>
+                        <TableCell className="w-16 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">{item.spaCode}</TableCell>
+                        <TableCell className="w-16 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">{item.spaName}</TableCell>
+                        <TableCell className="w-16 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">{item.cityName}</TableCell>
+                        <TableCell className="w-16 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">{item.area}</TableCell>
 
-                        <TableCell className="w-16 px-6 py-4 text-gray-900 dark:text-gray-100">
+                        <TableCell className="w-16 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
                           {item.openingDate ? new Date(item.openingDate).toLocaleDateString() : '-'}
                         </TableCell>
-                        <TableCell className="w-16 px-6 py-4 text-gray-900 dark:text-gray-100">
+                        <TableCell className="w-16 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
                          <Badge
                                 size="sm"
                                 color={
@@ -653,12 +653,12 @@ export default function MasterTable() {
                                 {item.status || '-'}
                               </Badge>
                         </TableCell>
-                        <TableCell className="w-48 px-6 py-4 text-gray-900 dark:text-gray-100">
+                        <TableCell className="w-48 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
                           <div className="truncate max-w-48" title={item.address || '-'}>
                             {item.address || '-'}
                           </div>
                         </TableCell>
-                        <TableCell className="w-24 px-6 py-4 text-gray-900 dark:text-gray-100">
+                        <TableCell className="w-24 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
                           <div className="flex flex-row gap-1">
                             <Button
                               size="sm"
