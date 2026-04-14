@@ -461,7 +461,7 @@ export default function MaintenanceTransactionsTable() {
         <div className="space-y-4">
             {/* ── Top Bar ── */}
       <div className="flex items-center justify-between gap-2 px-3 sticky top-0 z-20 py-2 border-b border-gray-200 dark:border-gray-700">
-        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
           Showing {filteredTransactions.length} of {totalCount} transactions
         </p>
 
@@ -554,7 +554,7 @@ export default function MaintenanceTransactionsTable() {
                                             ].map(({ width, label }) => (
                                                 <TableCell
                                                     key={label}
-                                                    className={`${width} px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-gray-900 dark:text-white whitespace-nowrap bg-gray-50 dark:bg-brand-500`}
+                                                    className={`${width} px-3 py-2 text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white whitespace-nowrap bg-gray-50 dark:bg-brand-500`}
                                                 >
                                                     {label}
                                                 </TableCell>
@@ -567,26 +567,26 @@ export default function MaintenanceTransactionsTable() {
                                                 key={item.transactionId || item.id}
                                                 className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                                             >
-                                                <TableCell className="w-16 px-3 py-2 text-[10px] text-gray-900 dark:text-gray-100">{item.siteId?.code || '-'}</TableCell>
-                                                <TableCell className="w-24 px-3 py-2 text-[10px] text-gray-900 dark:text-gray-100">{item.siteId?.siteName || '-'}</TableCell>
-                                                {/* <TableCell className="w-32 px-3 py-2 text-[10px] text-gray-900 dark:text-gray-100 font-medium">
+                                                <TableCell className="w-16 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">{item.siteId?.code || '-'}</TableCell>
+                                                <TableCell className="w-24 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">{item.siteId?.siteName || '-'}</TableCell>
+                                                {/* <TableCell className="w-32 px-3 py-2 text-xs text-gray-900 dark:text-gray-100 font-medium">
                                                     {item.ownerName || "..."}
                                                 </TableCell> */}
-                                                <TableCell className="w-40 px-3 py-2 text-[10px] text-gray-900 dark:text-gray-100">{item.maintenanceDescription || "-"}</TableCell>
-                                                <TableCell className="w-32 px-3 py-2 text-[10px] text-gray-900 dark:text-gray-100">
+                                                <TableCell className="w-40 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">{item.maintenanceDescription || "-"}</TableCell>
+                                                <TableCell className="w-32 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
                                                     {item.monthYear || '-'}
                                                 </TableCell>
-                                                <TableCell className="w-32 px-3 py-2 text-[10px] text-gray-900 dark:text-gray-100">
+                                                <TableCell className="w-32 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
                                                     {formatDate(item.paymentDate)}
                                                 </TableCell>
-                                                <TableCell className="w-32 px-3 py-2 text-[10px] text-gray-900 dark:text-gray-100 font-medium">
+                                                <TableCell className="w-32 px-3 py-2 text-xs text-gray-900 dark:text-gray-100 font-medium">
                                                     {formatCurrency(item.paymentAmount)}
                                                 </TableCell>
-                                                <TableCell className="w-32 px-3 py-2 text-[10px] text-gray-900 dark:text-gray-100">{item.paymentType || '-'}</TableCell>
-                                                <TableCell className="w-24 px-3 py-2 text-[10px] text-gray-900 dark:text-gray-100 font-mono text-xs">
+                                                <TableCell className="w-32 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">{item.paymentType || '-'}</TableCell>
+                                                <TableCell className="w-24 px-3 py-2 text-xs text-gray-900 dark:text-gray-100 font-mono text-xs">
                                                     {item.utrNumber || '-'}
                                                 </TableCell>
-                                                <TableCell className="w-24 px-3 py-2 text-[10px] text-gray-900 dark:text-gray-100">
+                                                <TableCell className="w-24 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
                                                     <Badge
                                                         size="sm"
                                                         color={
@@ -600,7 +600,7 @@ export default function MaintenanceTransactionsTable() {
                                                         {item.paidStatus || 'Unknown'}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="w-10 px-3 py-2 text-[10px] text-gray-900 dark:text-gray-100">
+                                                <TableCell className="w-10 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
                                                     {item.image ? (
                                                         <button
                                                             type="button"
@@ -614,7 +614,7 @@ export default function MaintenanceTransactionsTable() {
                                                         "-"
                                                     )}
                                                 </TableCell>
-                                                <TableCell className="w-28 px-3 py-2 text-[10px] text-gray-900 dark:text-gray-100">
+                                                <TableCell className="w-28 px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
                                                     <div className="flex space-x-2">
                                                         <button
                                                             onClick={() => handleUpdateClick(item)}
